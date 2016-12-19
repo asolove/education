@@ -13,18 +13,18 @@ from zookeeper import ZOOKEEPER_RULES
 # specific to a particular rule set.  The backchainer will be
 # tested on things other than ZOOKEEPER_RULES.
 
-
+# Given a set of rules and a hypothesis,
+# what goal tree tells us how to prove hypothesis using
+# that set of rules.
 def backchain_to_goal_tree(rules, hypothesis):
     return simplify(
         OR(hypothesis,
             OR(filter(None, [satisfy_hypothesis(rule, hypothesis, rules) for rule in rules]))))
 
-          #  OR([goal_tree_for_goal(rules, rule.antecedent) for rule in rules if match_role(rule, match(rule.consequent(), hypothesis) is not None])))
-
 # Given the rule (X has hair OR X has milk -> X is a mammal)
-# and the goal of proving (Adam is a mammal):
+# and the hypothesis (Adam is a mammal):
 # Unify the goal's consequent with the hypothesis
-# to get the substitution: X: Adam
+# to get the substitution: { X: Adam }
 # Unify that with the antecedent to get the next goal:
 # Adam has hair OR Adam has milk
 def satisfy_hypothesis(rule, hypothesis, rules):
@@ -40,7 +40,6 @@ def satisfy_hypothesis(rule, hypothesis, rules):
             return OR(map(lambda g: transform(g), goal_tree))
         else:
             return backchain_to_goal_tree(rules, populate(goal_tree, substitutions))
-
 
     return transform(rule.antecedent())
 
