@@ -251,6 +251,6 @@ from backchain import backchain_to_goal_tree
 # Please answer these questions inside the double quotes.
 
 HOW_MANY_HOURS_THIS_PSET_TOOK = '1.5'
-WHAT_I_FOUND_INTERESTING = 'Recursion'
+WHAT_I_FOUND_INTERESTING = 'Recursive control-flow'
 WHAT_I_FOUND_BORING = 'Pseudo-Prolog syntax as Python strings, no checking for well-formedness ins trings.'
 
