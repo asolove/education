@@ -98,9 +98,8 @@ senate_group1, senate_group2 = crosscheck_groups(senate_people)
 ## See 'hamming_distance()' in classify.py for an example that
 ## computes Hamming distances.
 
-def euclidean_distance(list1, list2):
-    # this is not the right solution!
-    return hamming_distance(list1, list2)
+def euclidean_distance(xs, ys):
+    return sum((x-y)**2 for x, y in zip(xs, ys)) ** .5
 
 #Once you have implemented euclidean_distance, you can check the results:
 #evaluate(nearest_neighbors(euclidean_distance, 1), senate_group1, senate_group2)
@@ -119,7 +118,13 @@ my_classifier = nearest_neighbors(hamming_distance, 1)
 ## which should lead to simpler trees.
 
 def information_disorder(yes, no):
-    return homogeneous_disorder(yes, no)
+    return (len(yes) * set_information_disorder(yes) + len(no) * set_information_disorder(no)) / (len(yes) + len(no))
+
+def set_information_disorder(xs):
+    counts = dict((value, sum(x == value for x in xs)) for value in set(xs))
+    n_b = float(len(xs))
+    return sum(-count / n_b * math.log(count / n_b, 2) for (value, count) in counts.items())
+
 
 #print CongressIDTree(senate_people, senate_votes, information_disorder)
 #evaluate(idtree_maker(senate_votes, homogeneous_disorder), senate_group1, senate_group2)
@@ -149,15 +154,15 @@ def limited_house_classifier(house_people, house_votes, n, verbose = False):
                                    
 ## Find a value of n that classifies at least 430 representatives correctly.
 ## Hint: It's not 10.
-N_1 = 10
+N_1 = 600
 rep_classified = limited_house_classifier(house_people, house_votes, N_1)
 
 ## Find a value of n that classifies at least 90 senators correctly.
-N_2 = 10
+N_2 = 70
 senator_classified = limited_house_classifier(senate_people, senate_votes, N_2)
 
 ## Now, find a value of n that classifies at least 95 of last year's senators correctly.
-N_3 = 10
+N_3 = 30
 old_senator_classified = limited_house_classifier(last_senate_people, last_senate_votes, N_3)
 
 
