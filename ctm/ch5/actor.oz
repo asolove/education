@@ -1,16 +1,15 @@
 % MooC exercise: agent to evaluate single-arg functions
 declare Eval
 fun {Eval Port}
-   local Input
-   in
-      thread
-         for Function#Arg in Input do
-            {Send Port {Function Arg}}
-         end
-      end
-      % {Browse Input}
-      {NewPort Input}
-   end
+   Input
+ in
+    thread
+       for Function#Arg in Input do
+          {Send Port {Function Arg}}
+       end
+    end
+    % {Browse Input}
+    {NewPort Input}
 end
 
 local
