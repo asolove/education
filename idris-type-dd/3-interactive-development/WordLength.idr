@@ -17,3 +17,21 @@ insertionSort : (Ord a) => Vect n a -> Vect n a
 insertionSort [] = []
 insertionSort (x :: xs) = let xsSorted = insertionSort xs in
                               insert x xsSorted
+
+-- Exercises
+total myLength : (List a) -> Nat
+myLength [] = 0
+myLength (x :: xs) = 1 + myLength xs
+
+total myReverse : (List a) -> (List a)
+myReverse [] = []
+myReverse (x :: xs) = myReverse xs ++ [x]
+
+total myMap : (a -> b) -> List a -> List b
+myMap f [] = []
+myMap f (x :: xs) = f x :: myMap f xs
+
+total myVectMap : (a -> b) -> Vect len a -> Vect len b
+myVectMap f [] = []
+myVectMap f (x :: xs) = f x :: myVectMap f xs
+
