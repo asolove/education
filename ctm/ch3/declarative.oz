@@ -30,6 +30,7 @@ in
    {SqrtIter Guess}
 end
 
+
 % Abstract iteration into a higher-order function:
 declare
 fun {Iterate S Done Step}
@@ -77,6 +78,8 @@ fun {Fact N}
 in
    {FactIter N 1}
 end
+
+{Show {Fact 10}}
 
 % 3.4: Programming with recusion
 % Some very key ideas presented here:
@@ -270,3 +273,14 @@ end
 % This is starting to get more natural. I can write these myself.
 
 % 3.4.6: Trees
+
+declare
+fun {Lookup X T}
+   case T
+   of leaf then notfound
+   [] tree(Y V T1 T2) then
+      if X<Y then {Lookup X T1}
+      elseif X>Y then {Lookup X T2}
+      else found(V) end
+   end
+end
