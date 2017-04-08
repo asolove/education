@@ -1,4 +1,4 @@
-#lang scheme
+#lang racket
 
 ; 1.11
 ; subst always recurs on smaller pieces,
@@ -66,3 +66,59 @@
       '()
       (cons (list x (car ys))
             (product-zip x (cdr ys)))))
+
+; 1.31
+; Bintree::=Int |(Symbol Bintree Bintree)
+;
+(define (leaf val) val)
+(define (interior-node sym lson rson)
+  (list sym lson rson))
+(define (leaf? val) (number? val))
+(define (lson btree) (cadr btree))
+(define (rson btree) (caddr btree))
+(define (contents-of btree)
+  (if (leaf? btree)
+      btree
+      (car btree)))
+
+; 1.32
+(define (double-tree btree)
+  (if (leaf? btree)
+      (leaf (* 2 (contents-of btree)))
+      (interior-node
+       (contents-of btree)
+       (double-tree (lson btree))
+       (double-tree (rson btree)))))
+
+; 1.33
+(define (mark-leaves-with-red-depth btree)
+  (mark-leaves-with-red-depth-and-depth btree 0))
+
+(define (mark-leaves-with-red-depth-and-depth btree d)
+  (if (leaf? btree)
+      (leaf d)
+      (let ((new-d (if (eqv? 'red (contents-of btree))
+                       (+ d 1)
+                       d)))
+        (interior-node
+         (contents-of btree)
+         (mark-leaves-with-red-depth-and-depth (lson btree) new-d)
+         (mark-leaves-with-red-depth-and-depth (rson btree) new-d)))))
+
+; 1.35
+(define (number-leaves btree)
+  (car (number-leaves-n btree 0)))
+
+; Behaves like number-leaves, but takes an n to start at,
+; and returns (list new-btree new-n)
+(define (number-leaves-n btree n)
+  (if (leaf? btree)
+      (list n (+ n 1))
+      (match-let* ([(list new-lson n2)
+                    (number-leaves-n (lson btree) n)]
+                   [(list new-rson n3)
+                    (number-leaves-n (rson btree) n2)])
+        (list
+         (interior-node (contents-of btree) new-lson new-rson)
+         n3))))
+  
