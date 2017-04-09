@@ -3,7 +3,7 @@
 (provide (all-defined-out))
 
 
-;; stolen from https://github.com/mwand/eopl3
+;; initial state copied from https://github.com/mwand/eopl3
 
 (define the-lexical-spec
   '((whitespace (whitespace) skip)
@@ -22,6 +22,10 @@
     (expression
      ("-" "(" expression "," expression ")")
      diff-exp)
+
+    (expression
+     ("minus" "(" expression ")")
+     minus-exp)
     
     (expression
      ("zero?" "(" expression ")")
@@ -32,9 +36,29 @@
      if-exp)
     
     (expression (identifier) var-exp)
+
+    (expression
+     ("cons" "(" expression "," expression ")")
+     cons-exp)
+
+    (expression
+     ("car" "(" expression ")")
+     car-exp)
     
     (expression
-     ("let" identifier "=" expression "in" expression)
+     ("cdr" "(" expression ")")
+     cdr-exp)
+
+    (expression
+     ("null?" "(" expression ")")
+     null?-exp)
+
+    (expression
+     ("emptylist")
+     emptylist-exp)
+    
+    (expression
+     ("let" (arbno identifier "=" expression) "in" expression)
      let-exp)   
     
     ))
