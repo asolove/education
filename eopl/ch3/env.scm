@@ -7,6 +7,8 @@
 (define (empty-env) '())
 (define (empty-env? env) (null? env))
 
+(define (env? e) (pair? e))
+
 (define (extend-env* vars vals env)
   (cons (cons vars vals) env))
 
