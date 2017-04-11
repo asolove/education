@@ -21,6 +21,7 @@
 
 
 ; Indexed environment
+(define (env? e) (pair? e))
 (define (extend-env val env)
   (cons val env))
 (define (apply-env n env)
@@ -28,7 +29,7 @@
       (car env)
       (apply-env (- n 1) (cdr env))))
 (define (init-env)
-  (list 2 5 10))
+  (list (num-val 2) (num-val 5) (num-val 10)))
 
 ; ExpVal data type
 (define-datatype expval expval?
@@ -52,18 +53,18 @@
 (define (expval->proc val)
   (cases expval val
     (proc-val (p) p)
-    (else (eopl:error '(trying to get proc from incompatible value ,val)))))
+    (else (eopl:error `(trying to get proc from incompatible value ,val)))))
 
 ; Proc data type
-(define (proc? value)
-  (procedure? value))
+(define-datatype proc proc?
+  (procedure
+   (body expression?)
+   (saved-env env?)))
 
-(define (procedure var body env)
-  (lambda (val)
-    (value-of body (extend-env var val env))))
-
-(define (apply-procedure proc val)
-  (proc val))
+(define (apply-procedure a-proc val)
+  (cases proc a-proc
+    (procedure (body saved-env)
+               (value-of body (extend-env val saved-env)))))
 
 ; Translation
 (define (translation-of-program prog)
@@ -125,7 +126,7 @@
                        body
                        (extend-env (value-of val env) env)))
     (nameless-proc-exp (body)
-                       (value-of body env))
+                       (proc-val (procedure body env)))
     (call-exp (fn-exp arg-exp)
               (let ((proc (expval->proc (value-of fn-exp env)))
                     (arg (value-of arg-exp env)))
