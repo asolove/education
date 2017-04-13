@@ -5,19 +5,28 @@
 
 (require "./nameless-syntax.scm")
 
-;; Nameless transfomration of letrec language
+;; Nameless transformation of letrec language
+; + Ex 3.40: transform letrec
 
-; Static environment
+; Static environment for translation
 (define (empty-senv) '())
-(define (extend-senv var senv)
-  (cons var senv))
+
+(define (extend-senv var letrec? senv)
+  (cons (cons var letrec?) senv))
+
+; Tries to find var in the list of vars in senv
+; if found, returns its index and whether it was bound by letrec
+; senv x var -> (n, letrec?) | error
 (define (apply-senv senv var)
+  (apply-senv-n senv var 0))
+
+(define (apply-senv-n senv var n)
   (cond ((null? senv) (eopl:error `(Unable to find mvar in environment)))
-        ((eqv? var (car senv)) 0)
-        (else (+ 1 (apply-senv (cdr senv) var)))))
+        ((eqv? var (caar senv)) (cons n (cdar senv)))
+        (else (apply-senv-n (cdr senv) var (+ n 1)))))
 
 (define (init-senv)
-  (extend-senv 'i (extend-senv 'v (extend-senv 'x (empty-senv)))))
+  (extend-senv 'i #f (extend-senv 'v #f (extend-senv 'x #f (empty-senv)))))
 
 
 ; Indexed environment
@@ -85,13 +94,25 @@
                     (translation-of if-true senv)
                     (translation-of if-false senv)))
     (var-exp (var)
-             (nameless-var-exp (apply-senv senv var)))
+             (let* ((binding (apply-senv senv var))
+                    (n (car binding))
+                    (letrec? (cdr binding)))
+               (if letrec?
+                   (nameless-letrec-var-exp n)
+                   (nameless-var-exp n))))
+    
     (let-exp (var expr body)
              (nameless-let-exp (translation-of expr senv)
-                               (translation-of body (extend-senv var senv))))
+                               (translation-of body (extend-senv var #f senv))))
+    (letrec-exp (var fn-arg p-body letrec-body)
+                (nameless-letrec-exp
+                 (translation-of p-body (extend-senv fn-arg #f
+                                                     (extend-senv var #t senv)))
+                 (translation-of letrec-body (extend-senv var #t senv))))
+
     (proc-exp (var body)
               (nameless-proc-exp
-               (translation-of body (extend-senv var senv))))
+               (translation-of body (extend-senv var #f senv))))
     (call-exp (fn-exp arg-exp)
               (call-exp
                (translation-of fn-exp senv)
@@ -121,10 +142,23 @@
                 (value-of if-false env)))
     (nameless-var-exp (n)
                       (apply-env n env))
+    (nameless-letrec-var-exp (n)
+                             (cases proc (expval->proc (apply-env n env))
+                               (procedure (p-body saved-env)
+                                          (proc-val (procedure
+                                                     p-body
+                                                     (extend-env (apply-env n env)
+                                                      saved-env))))))
+    
     (nameless-let-exp (val body)
                       (value-of
                        body
                        (extend-env (value-of val env) env)))
+    (nameless-letrec-exp (p-body letrec-body)
+                         (value-of
+                          letrec-body
+                          (extend-env (proc-val (procedure p-body env)) env)))
+                                   
     (nameless-proc-exp (body)
                        (proc-val (procedure body env)))
     (call-exp (fn-exp arg-exp)
@@ -134,8 +168,7 @@
     (else (eopl:error `(Invalid expr ,exp in value-of)))))
 
 
-(define mutual-letrec-program
-  "letrec
-      even(x) = if zero?(x) then 1 else (odd -(x,1))
-      odd(x) = if zero?(x) then 0 else (even -(x,1))
-   in (odd 13)")
+(define letrec-program
+  "letrec plus (x) = proc (y)
+                       if zero?(x) then y else ((plus -(x,1)) -(y,-(0,1)))
+     in ((plus 2) 2)")

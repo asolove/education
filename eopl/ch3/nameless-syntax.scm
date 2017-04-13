@@ -46,6 +46,10 @@
      let-exp)
 
     (expression
+     ("letrec" identifier "(" identifier ")" "=" expression "in" expression)
+     letrec-exp)
+
+    (expression
      ("%lexref" number)
      nameless-var-exp)
 
@@ -56,6 +60,14 @@
     (expression
      ("%lexproc" expression)
      nameless-proc-exp)
+
+    (expression
+     ("%letrec" expression "in" expression)
+     nameless-letrec-exp)
+
+    (expression
+     ("%lex-letrec-var" number)
+     nameless-letrec-var-exp)
     
     ))
 
