@@ -9,6 +9,7 @@
 ; plus exercises
 ; 4.1: Reference created in each call, so no shared state between calls
 ; 4.8, 4.10: begin
+; 4.13: multiple-arg procs
 
 ; Environment data type with support for letrec
 (define-datatype environment environment?
@@ -16,6 +17,10 @@
   (extend-env
    (var symbol?)
    (val expval?)
+   (env environment?))
+  (extend-env*
+   (vars (list-of symbol?))
+   (vals (list-of expval?))
    (env environment?))
   (extend-env-rec
    (p-names (list-of symbol?))
@@ -32,6 +37,11 @@
                   (if (eqv? var search-var)
                       val
                       (apply-env rest-env search-var)))
+      (extend-env* (vars vals rest-env)
+                   (let ((i (index-of vars search-var)))
+                     (if i
+                         (list-ref vals i)
+                         (apply-env rest-env search-var))))
       (extend-env-rec (p-names b-vars p-bodies saved-env)
                       (let ((p-index (index-of p-names search-var)))
                         (if p-index
@@ -76,12 +86,12 @@
 (define (proc? value)
   (procedure? value))
 
-(define (procedure var body env)
-  (lambda (val)
-    (value-of body (extend-env var val env))))
+(define (procedure vars body env)
+  (lambda (vals)
+    (value-of body (extend-env* vars vals env))))
 
-(define (apply-procedure proc val)
-  (proc val))
+(define (apply-procedure proc vals)
+  (proc vals))
 
 ; Store data type
 (define (empty-store) '())
@@ -163,14 +173,16 @@
                 (let ((new-env (extend-env-rec p-names b-vars p-bodies env)))
                   (value-of letrec-body new-env)))
     
-    (proc-exp (var body)
-              (proc-val (procedure var body env)))
+    (proc-exp (vars body)
+              (proc-val (procedure vars body env)))
                 
                 
-    (call-exp (fn-exp arg-exp)
+    (call-exp (fn-exp arg-exps)
               (let ((proc (expval->proc (value-of fn-exp env)))
-                    (arg (value-of arg-exp env)))
-                (apply-procedure proc arg)))
+                    (args (map (lambda (exp)
+                                 (value-of exp env))
+                               arg-exps)))
+                (apply-procedure proc args)))
 
     (begin-exp (first-exp rest-exps)
                (car (reverse (map (lambda (expr)
@@ -194,3 +206,8 @@
         setref(x, 2);
         deref(x)
      end")
+
+(define multi-arg-ref-program
+  "let x = newref(20)
+     in let decrRef = proc (ref amount) setref(ref, -(deref(ref), amount))
+        in begin (decrRef x 10); deref(x) end")
