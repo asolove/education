@@ -9,7 +9,7 @@
 
 (define identifier? symbol?)
 
-(define debug? #f)
+(define debug? #t)
 
 (define (debug form)
   (when debug?
@@ -57,7 +57,46 @@
                                                   (list-ref p-bodies p-index)
                                                   env)))
                             (apply-env saved-env search-var)))))))
-           
+
+; Mutex data type
+(define-datatype mutex mutex?
+  (a-mutex
+   (open (ref-of boolean?))
+   (wait-q (ref-of queue?))))
+
+(define (open? m)
+  (cases mutex m
+    (a-mutex (open _q) (deref open))))
+
+(define (make-mutex)
+  (a-mutex (newref #t) (newref (empty-queue))))
+
+(define (open! m)
+  (cases mutex m
+    (a-mutex (open _q) (setref! open #t))))
+
+(define (close! m)
+  (cases mutex m
+    (a-mutex (open _q)
+             (setref! open #f))))
+
+(define (add-blocked-thread m th)
+  (cases mutex m
+    (a-mutex (_open q)
+             (setref! q (enqueue (deref q) th)))))
+
+(define (pop-blocked-thread m)
+  (cases mutex m
+    (a-mutex (_open q)
+             (dequeue (deref q)
+                      (lambda (thread new-q)
+                        (setref! q new-q)
+                        thread)))))
+
+(define (threads-blocked? m)
+  (cases mutex m
+    (a-mutex (_open q)
+             (not (queue-empty? (deref q))))))
 
 ; ExpVal data type
 (define-datatype expval expval?
@@ -66,7 +105,9 @@
   (bool-val
    (bool boolean?))
   (proc-val
-   (proc proc?)))
+   (proc proc?))
+  (mutex-val
+   (mutex mutex?)))
 
 (define (expval->num val)
   (cases expval val
@@ -82,6 +123,11 @@
   (cases expval val
     (proc-val (p) p)
     (else (eopl:error `(trying to get proc from incompatible value ,val)))))
+
+(define (expval->mutex val)
+  (cases expval val
+    (mutex-val (m) m)
+    (else (eopl:error `(trying to get mutex from incompatible value ,val)))))
 
 ; Proc data type
 (define (proc? value)
@@ -105,6 +151,10 @@
   (set! the-store (empty-store)))
 
 (define (reference? v) (integer? v))
+(define (ref-of pred?)
+  (lambda (v)
+    (and (reference? v)
+         (pred? (deref v)))))
 
 (define (newref val)
   (let ((next-ref (length the-store)))
@@ -236,6 +286,10 @@
     (k cont?))
   (spawn-cont
    (k cont?))
+  (wait-cont
+   (k cont?))
+  (signal-cont
+   (k cont?))
   (end-subthread-cont)
   (end-main-thread-cont))
     
@@ -308,6 +362,28 @@
                                         (list (num-val 28))
                                         (end-subthread-cont))))
                   (apply-cont k (num-val 73))))
+    (wait-cont (k)
+               (let ((m (expval->mutex val)))
+                 (if (open? m)
+                     (begin
+                       (close! m)
+                       (apply-cont k 'arbitrary))
+                     (begin
+                       (add-blocked-thread m k)
+                       (run-next-thread)))))
+    (signal-cont (k)
+                 (let ((m (expval->mutex val)))
+                   (if (open? m)
+                       (apply-cont k 'arbitrary)
+                       (if (threads-blocked? m)
+                           (begin
+                             (place-on-ready-queue!
+                              (pop-blocked-thread m))                             
+                             (add-blocked-thread m k)
+                             (apply-cont k 'arbitrary))
+                           (begin
+                            (open! m)
+                            (apply-cont k 'arbitrary))))))
     (end-subthread-cont ()
                         (debug "Thread finished")
                         (run-next-thread))
@@ -363,7 +439,15 @@
                 (value-of/k exp env (assign-cont var env k)))
 
     (spawn-exp (exp)
-               (value-of/k exp env (spawn-cont k)))))
+               (value-of/k exp env (spawn-cont k)))
+    (mutex-exp ()
+               (apply-cont k (mutex-val (make-mutex))))
+    (wait-exp (exp)
+              (value-of/k exp env (wait-cont k)))
+    (signal-exp (exp)
+                (value-of/k exp env (signal-cont k)))
+    
+    ))
               
 
 
@@ -412,3 +496,19 @@
           spawn((incr_x));
           spawn((incr_x))
       end")
+
+(define safe-counter-program
+  "let x = 0
+      in let mut = mutex()
+      in let incr_x = proc (id)
+                       proc (dummy)
+                        begin
+                         wait(mut);
+                         set x = -(x,-1);
+                         signal(mut)
+end
+      in begin
+          spawn((incr_x 100));
+          spawn((incr_x 200));
+          spawn((incr_x 300))
+end")
