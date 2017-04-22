@@ -56,6 +56,10 @@
     (expression
      ("set" identifier "=" expression)
      assign-exp)
+
+    (expression
+     ("spawn" "(" expression ")")
+     spawn-exp)
     
     ))
 

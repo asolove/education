@@ -9,6 +9,15 @@
 
 (define identifier? symbol?)
 
+(define debug? #f)
+
+(define (debug form)
+  (when debug?
+    (begin
+      (newline)
+      (display form)
+      (newline))))
+
 ; Environment data type with support for letrec
 (define-datatype environment environment?
   (empty-env)
@@ -72,7 +81,7 @@
 (define (expval->proc val)
   (cases expval val
     (proc-val (p) p)
-    (else (eopl:error '(trying to get proc from incompatible value ,val)))))
+    (else (eopl:error `(trying to get proc from incompatible value ,val)))))
 
 ; Proc data type
 (define (proc? value)
@@ -224,13 +233,31 @@
   (begin-cont
     (rest-exps (list-of expression?))
     (env environment?)
-    (k cont?)))
+    (k cont?))
+  (spawn-cont
+   (k cont?))
+  (end-subthread-cont)
+  (end-main-thread-cont))
     
 
 (define (apply-cont k val)
+  (if (time-expired?)
+      (begin
+        (place-on-ready-queue!
+         (lambda ()
+           (debug `(Resuming thread with continuation ,k))
+           (apply-cont k val)))
+        (debug `(Pausing thread with continuation ,k))
+        (run-next-thread))
+      (apply-cont-impl k val)))
+
+(define (apply-cont-impl k val)
+  
+  (decrement-timer!)
+  (debug `(Applying ,val to continuation ,k))
   (cases cont k
     (end-cont ()
-              (display "End of computation")
+              (debug "End of computation")
               val)
     (diff-cont1 (e2 env k)
                 (value-of/k e2 env (diff-cont2 val k)))
@@ -271,18 +298,37 @@
 
     (assign-cont (var env k)
                  (setref! (apply-env env var) val)
-                 (apply-cont k 42))))
+                 (apply-cont k (num-val 42)))
+    (spawn-cont (k)
+                (let ((proc1 (expval->proc val)))
+                  (place-on-ready-queue!
+                   (lambda ()
+                     (debug `(Starting to run new thread ,proc1))
+                     (apply-procedure/k proc1
+                                        (list (num-val 28))
+                                        (end-subthread-cont))))
+                  (apply-cont k (num-val 73))))
+    (end-subthread-cont ()
+                        (debug "Thread finished")
+                        (run-next-thread))
+    (end-main-thread-cont ()
+                          (set-final-answer! val)
+                          (run-next-thread))))
     
 
 ; Interpreter
 (define (run string)
-  (value-of-program (scan&parse string)))
+  (value-of-program (scan&parse string) 2))
 
-(define (value-of-program prog)
+(define (value-of-program prog timeslice)
+  (initialize-store!)
+  (initialize-scheduler! timeslice)
   (cases program prog
-    (a-program (exp) (value-of/k exp (init-env) (end-cont)))))
+    (a-program (exp)
+               (value-of/k exp (init-env) (end-main-thread-cont)))))
 
 (define (value-of/k exp env k)
+  (debug `(Getting value of ,exp))
   (cases expression exp
     (const-exp (n) (apply-cont k (num-val n)))
     (diff-exp (e1 e2)
@@ -314,7 +360,10 @@
                (value-of/k exp1 env (begin-cont rest-exps env k)))
 
     (assign-exp (var exp)
-                (value-of/k exp env (assign-cont var env k)))))
+                (value-of/k exp env (assign-cont var env k)))
+
+    (spawn-exp (exp)
+               (value-of/k exp env (spawn-cont k)))))
               
 
 
@@ -352,3 +401,14 @@
              in let a = (g 11)
                 in let b = (g 11)
                    in -(a, b)")
+
+(define unsafe-counter-program
+  "let x = 0
+      in let incr_x = proc ()
+                       proc ()
+                        set x = -(x, -1)
+      in begin
+          spawn(proc () begin 2; (incr_x) end);
+          spawn((incr_x));
+          spawn((incr_x))
+      end")
