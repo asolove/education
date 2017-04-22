@@ -119,6 +119,67 @@
                              (setref-inner  (cdr store1) (- ref1 1))))))))
           (setref-inner the-store ref))))
 
+; Queue data type
+(define-datatype queue queue?
+  (a-queue
+   (tail list?)
+   (head list?)))
+
+(define (empty-queue)
+  (a-queue '() '()))
+
+(define (queue-empty? q)
+  (cases queue q
+    (a-queue (tail head)
+             (and (null? tail) (null? head)))))
+
+(define (enqueue q item)
+  (cases queue q
+    (a-queue (tail head)
+             (a-queue (cons item tail) head))))
+
+(define (dequeue q fn)
+  (cases queue q
+    (a-queue (tail head)
+             (if (null? head)
+                 (let ((new-head (reverse tail)))
+                   (fn (car new-head) (a-queue '() (cdr new-head))))
+                 (fn (car head) (a-queue tail (cdr head)))))))
+
+; Scheduler data type
+(define the-ready-queue 'uninitialized)
+(define the-final-answer 'uninitialized)
+(define the-max-time-slice 'uninitialized)
+(define the-time-remaining 'uninitialized)
+
+(define (initialize-scheduler! time)
+  (set! the-ready-queue (empty-queue))
+  (set! the-final-answer '())
+  (set! the-max-time-slice time)
+  (set! the-time-remaining time))
+
+(define (place-on-ready-queue! thread)
+  (set! the-ready-queue (enqueue the-ready-queue thread)))
+
+(define (run-next-thread)
+  (if (queue-empty? the-ready-queue)
+      the-final-answer
+      (dequeue the-ready-queue
+               (lambda (next-thread queue)
+                 (set! the-ready-queue queue)
+                 (set! the-time-remaining the-max-time-slice)
+                 (next-thread)))))
+
+(define (set-final-answer! val)
+  (set! the-final-answer val))
+
+(define (time-expired?)
+  (<= the-time-remaining 0))
+
+(define (decrement-timer!)
+  (set! the-time-remaining (- the-time-remaining 1)))
+
+
 
 ; Environment data type
 (define (init-env)
@@ -164,9 +225,7 @@
     (rest-exps (list-of expression?))
     (env environment?)
     (k cont?)))
-  
-         
-  
+    
 
 (define (apply-cont k val)
   (cases cont k
