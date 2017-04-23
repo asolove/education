@@ -62,7 +62,7 @@
      spawn-exp)
 
     (expression
-     ("mutex" "()")
+     ("mutex()")
      mutex-exp)
 
     (expression

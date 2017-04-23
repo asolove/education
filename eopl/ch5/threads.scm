@@ -500,15 +500,15 @@
 (define safe-counter-program
   "let x = 0
       in let mut = mutex()
-      in let incr_x = proc (id)
-                       proc (dummy)
+      in let incr_x = proc ()
+                       proc ()
                         begin
                          wait(mut);
                          set x = -(x,-1);
                          signal(mut)
-end
+                        end
       in begin
-          spawn((incr_x 100));
-          spawn((incr_x 200));
-          spawn((incr_x 300))
+          spawn(proc() begin 2; (incr_x) end);
+          spawn((incr_x));
+          spawn((incr_x))
 end")
