@@ -2,3 +2,5 @@
 *~
 compiled/
 *.out
+*.native
+_build

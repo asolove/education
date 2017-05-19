@@ -1,4 +1,8 @@
-type var = String.t;
+module Var = {
+  include String;
+};
+
+type var = Var.t;
 
 type value =
   | Var var
@@ -25,47 +29,42 @@ type cexp =
   | Primop primop (list value) (list var) (list cexp)
   ;
 
-module VarSet = Set.Make String;
-let union_all sets => List.fold_right VarSet.union sets VarSet.empty;
+module VarSet = Set.Make Var;
+
+open VarSet;
+
+let union_all sets => List.fold_right union sets empty;
 
 /* Free variables in list of expressions */
-let rec fvl: list value => VarSet.t = fun
-  | [] => VarSet.empty
-  | [Var v, ...r] => VarSet.add v (fvl r)
+let rec fvl: list value => t = fun
+  | [] => empty
+  | [Var v, ...r] => add v (fvl r)
   | [_, ...r] => fvl(r)
   ;
 
 /* Free variables in an expression */
-let rec fv: cexp => VarSet.t = fun
+let rec fv: cexp => t = fun
   | App v vs => fvl [v, ...vs]
-  | Switch v cs => VarSet.union (fvl [v]) (union_all (List.map fv cs))
+  | Switch v cs => union (fvl [v]) (union_all (List.map fv cs))
   | Record fs w e =>
-    VarSet.remove
-      w
-      (VarSet.union (fvl (List.map (fun (v, p) => v) fs)) (fv e))
+    remove w (union (fvl (List.map (fun (v, p) => v) fs)) (fv e))
   | Select i v w e =>
-    VarSet.remove
-      w
-      (VarSet.union (fvl [v]) (fv e))
+    remove w (union (fvl [v]) (fv e))
   | Offset i v w e =>
-    VarSet.remove
-      w
-      (VarSet.union (fvl [v]) (fv e))
+    remove w (union (fvl [v]) (fv e))
   | Primop p ls ws cs =>
-    VarSet.diff
-      (VarSet.union
-        (fvl ls)
-        (union_all (List.map fv cs)))
-      (VarSet.of_list ws)
+    diff
+      (union (fvl ls) (union_all (List.map fv cs)))
+      (of_list ws)
   | Fix fs e => {
     let func_names = List.map (fun (var, _, _) => var) fs;
-    let free_vars (var, args, body) => VarSet.diff (fv body) (VarSet.of_list args);
-    VarSet.diff
-      (VarSet.union (fv e) (union_all (List.map free_vars fs)))
-      (VarSet.of_list func_names)
+    let free_vars (var, args, body) => diff (fv body) (of_list args);
+    diff
+      (union (fv e) (union_all (List.map free_vars fs)))
+      (of_list func_names)
   };
 
-let print_set s => VarSet.iter print_endline s;
+let print_set s => iter print_endline s;
 
 let sample_exp =
   Fix
