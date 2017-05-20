@@ -1,0 +1,525 @@
+<HTML>
+<head>
+<title>Errata: Modern Compiler Implementation in ML</title>
+</head>
+<body bgcolor="#FFFFFF">
+<h2><font color="#0000C0">Modern Compiler Implementation in ML</font></h2>
+&#169;1998 by <a href="http://www.cs.princeton.edu/~appel"><strong>Andrew W. Appel</strong></a><br>
+
+
+<h2>Errors in the first edition, first printing (1998):</h2>
+<strong>The following errors also appear in the 1999 reprinting of the book.</strong>
+
+
+<p><strong>Page 53.</strong>
+After the sentence, "The resulting productions will not pose a problem for
+a predictive parser" add:<br>
+Although the grammar is still ambiguous -- the parsing table has two
+entries for the same slot -- we can resolve the ambiguity by using the
+"else <i>S</i>" action.
+
+<p><strong>Page 54.</strong>
+7th line from bottom: <tt>TIMES</tt> should not be in argument
+of <tt>skipto</tt>.
+
+<p><strong>Page 64.</strong> First line of left-hand box: change ampersand
+(&amp;) to $.
+
+<p><strong>Page 77.</strong> Lines 21-22 should read,<br>
+3. Discard input symbols (if necessary) until a lookahead is reached that
+has a non-error action in the current state.
+
+<p><strong>Page 97.</strong>
+The Tiger program shown is actually illegal, since g is declared to return
+no value but its body returns the value f().
+
+<p><strong>Page 137.</strong>
+Table 6.4.  The MIPS column of the table uses registers r2, r4, r5 for
+passing parameters.  The use of r2 for the "zeroth parameter" is 
+consistent with the MIPS convention of passing the static link in
+r2; the argument <i>x</i><sub>1</sub>, by this point in the
+compilation, is really the static link.
+
+<p><strong>Page 175.</strong>
+11th line from bottom, change "whether two expressions commute" to "whether a 
+statement commutes with an expression".
+
+<p><strong>Page 215.</strong>
+Table 10.5 in the 4th iteration, 
+the <i>out</i> set for statement 3 is <i>c</i>, when it should be <i>b</i>.
+
+<p><strong>Page 225.</strong>
+Lines 4-8, replace all five occurrences of <tt>IGraph</tt> with <tt>Graph</tt>.
+
+<p><strong>Page 235.</strong>
+Assignment statements on line 19 should say, <br>
+<i>t</i>:=<i>M</i>[<i>b</i><sub>loc</sub>]; 
+<i>M</i>[<i>a</i><sub>loc</sub>]:=<i>t</i>.
+
+<p><strong>Page 237.</strong> Figure 11.7, captions (a) and (b) are missing.
+
+<p><strong>Page 239.</strong> Last sentence, swap "afterward" and "beforehand".
+
+<p><strong>Page 242.</strong> Delete last bullet item entirely 
+("When <i>u</i> is coalesced ...").
+
+<p><strong>Page 248.</strong>
+Line 8, change all three occurrences of "nodeMoves" to "moveList".<br>
+Insert new line,  "EnableMoves(v)".
+
+<p><strong>Page 262.</strong> Figure 12.1, line 15 should refer
+to <tt>Temp.label</tt>, not <tt>Tree.label</tt>.
+
+<p><strong>Page 271.</strong> Algorithm 13.5, after second line, insert:<br>
+mark <i>x</i>
+
+<p><strong>Page 366.</strong>
+8th line from bottom, delete the word "not".
+
+<p><strong>Page 519.</strong>
+4th line from bottom, change both occurrences of "<tt>integer</tt>"
+to "<tt>int</tt>".
+
+
+<h4>The following errors have been corrected in the 1999 reprinting of the book.</h4>
+
+<p><strong>Page 27,28.</strong>
+The state labeled 5,6,7,8,15 should be 5,6,8,15.<br>
+The state labeled 10,11,12,13,15 should be 10,11,13,15.
+
+<p><strong>Page 29.</strong>
+The first noncomment line of Program 2.9 should be
+<pre>
+type lexresult = Tokens.token
+</pre>
+
+<p><strong>Page 42.</strong>
+Figure 3.3, the rightmost semicolon should be a comma.
+Also, the part of the derivation corresponding to "c +" is missing
+from the tree.
+
+<p><strong>Page 48.</strong> 
+Lines 6-15 should read, 
+<pre>
+for each production X -> Y<sub><small>1</small></sub>Y<sub><small>2</small></sub>...Y<sub><small><i>k</i></small></sub>
+    if Y<sub><small>1</small></sub>...Y<sub><small><i>k</i></small></sub> are all nullable (or if <i>k</i>=0)
+        then nullable[X] = true
+    for each <i>i</i> from 1 to <i>k</i>, each <i>j</i> from <i>i</i>+1 to <i>k</i>
+        if Y<sub><small>1</small></sub>...Y<sub><small><i>i</i>-1</small></sub> are all nullable (or if i = 1)
+            then FIRST[X] = FIRST[X] u FIRST[Y<sub><small><i>i</i></small></sub>]
+        if Y<sub><small><i>i</i>+1</small></sub>...Y<sub><small><i>k</i></small></sub> are all nullable (or if i = k)
+            then FOLLOW[Y<sub><small><i>i</i></small></sub>] = FOLLOW[Y<sub><small><i>i</i></small></sub>] u FOLLOW[X]
+        if Y<sub><small><i>i</i>+1</small></sub>...Y<sub><small><i>j</i>-1</small></sub> are all nullable (or if i+1 = j)
+            then FOLLOW[Y<sub><small><i>i</i></small></sub>] = FOLLOW[Y<sub><small><i>i</i></small></sub>] u FIRST[Y<sub><small><i>j</i></small></sub>]
+</pre>
+
+<p><strong>Page 49.</strong>
+Algorithm 3.13, 
+lines 6-15 should read, 
+<pre>
+for each production X -> Y<sub><small>1</small></sub>Y<sub><small>2</small></sub>...Y<sub><small><i>k</i></small></sub>
+    if Y<sub><small>1</small></sub>...Y<sub><small><i>k</i></small></sub> are all nullable (or if <i>k</i>=0)
+        then nullable[X] <- true
+    for each <i>i</i> from 1 to <i>k</i>, each <i>j</i> from <i>i</i>+1 to <i>k</i>
+        if Y<sub><small>1</small></sub>...Y<sub><small><i>i</i>-1</small></sub> are all nullable (or if i = 1)
+            then FIRST[X] <- FIRST[X] u FIRST[Y<sub><small><i>i</i></small></sub>]
+        if Y<sub><small><i>i</i>+1</small></sub>...Y<sub><small><i>k</i></small></sub> are all nullable (or if i = k)
+            then FOLLOW[Y<sub><small><i>i</i></small></sub>] <- FOLLOW[Y<sub><small><i>i</i></small></sub>] u FOLLOW[X]
+        if Y<sub><small><i>i</i>+1</small></sub>...Y<sub><small><i>j</i>-1</small></sub> are all nullable (or if i+1 = j)
+            then FOLLOW[Y<sub><small><i>i</i></small></sub>] <- FOLLOW[Y<sub><small><i>i</i></small></sub>] u FIRST[Y<sub><small><i>j</i></small></sub>]
+</pre>
+
+<p><strong>Page 52.</strong>
+Table 3.16 caption should refer to Grammar 3.15, not Grammar 3.8.
+
+<p><strong>Page 56.</strong>
+Figure 3.18, 7th line from the bottom, the second occurrence of
+<tt>id</tt> should have subscript 20, not 4.<br>
+Figure 3.18, 5th line from the bottom, "(S;E)" should be "(S,E)"
+at the end of the line.
+
+<p><strong>Page 57.</strong>
+Table 3.19, row 9, is missing some entries.  In column "id" the entry
+should be "s20", in column "num" the entry should be "s10", and in column
+"(" the entry should be "s8".
+
+<p><strong>Page 64.</strong>
+In the left-hand box, the lookahead for the last two lines should
+be =, not $.
+<p>
+The last two lines of the page should read,
+<blockquote>
+For some grammars, the LALR(1) table contains reduce-reduce conflicts where
+the LR(1) table has none, but in practice the difference ...
+</blockquote>
+
+<p><strong>Page 65.</strong>
+Figure 3.27 shows the LR(1) states for Grammar 3.23, not for Grammar 3.26.
+<br>
+In Figure 3.27, states 4 and 7, the lookahead for T->x should be
+"$,+" and not just "$".
+<p>
+The LR(1) states for Grammar 3.26 are as follows:<br>
+<img alt="LR(1) states for Grammar 3.26" src="../text/evlr1dfa.gif">
+
+<p><strong>Page 65.</strong>
+Table 3.28a, the last entry in row 13 should be <strong>g7</strong>,
+not <strong>f7</strong>.<br>
+Table 3.28b, the entry in row 7, column "=", should be <strong>r3</strong> instead of
+blank.
+
+<p><strong>Page 88.</strong>
+Program 4.1 caption should read,<br>
+Recursive-descent interpreter for part of Grammar 3.15.
+
+<p><strong>Page 96.</strong>
+The bottom half of Program 4.7 should use constructor names consistent
+with Program 1.5, as shown here:
+<pre>
+stm : stm SEMICOLON stm         (Absyn.CompoundStm(stm1,stm2))
+stm : ID ASSIGN exp             (Absyn.AssignStm(ID,exp))
+stm : PRINT LPAREN exps RPAREN  (Absyn.PrintStm(exps))
+
+exps: exp                       ( exp :: nil )
+exps: exp COMMA exps            ( exp :: exps )
+
+exp : INT                       (Absyn.NumExp(INT))
+exp : ID                        (Absyn.IdExp(ID))
+exp : exp PLUS exp              (Absyn.OpExp(exp1,Absyn.Plus,exp2))
+exp : exp MINUS exp             (Absyn.OpExp(exp1,Absyn.Minus,exp2))
+exp : exp TIMES exp             (Absyn.OpExp(exp1,Absyn.Times,exp2))
+exp : exp DIV exp               (Absyn.OpExp(exp1,Absyn.Div,exp2))
+exp : stm COMMA exp             (Absyn.EseqExp(stm,exp))
+exp : LPAREN exp RPAREN         ( exp )
+</pre>
+
+
+<p><strong>Page 97.</strong>
+Line 8, <strong>A_SeqExp</strong> should be <strong>SeqExp</strong>.</br>
+Line 11, <strong>A_OpExp</strong> should be <strong>OpExp</strong>.</br>
+
+
+<p><strong>Page 99.</strong>
+At the bottom of the page, add the following sentence:
+"An empty statement <tt>()</tt> is represented by <tt>SeqExp(nil)</tt>.
+
+<p><strong>Page 104.</strong>
+Line 5 of the program fragment, delete the semicolon after <tt>print_int(j)</tt>.
+
+<p><strong>Page 113.</strong>
+The second program fragment should use <tt>:=</tt> instead of <tt>=</tt>
+in the <tt>var</tt> declarations of <tt>a</tt> and <tt>b</tt>.
+
+<p><strong>Page 116.</strong>
+Line 13 should be <tt>{exp=(),ty=Types.INT})</tt><br>
+15th line from bottom, 
+<tt>SOME(E.VarEntry{access,ty})</tt>
+should be <tt>SOME(E.VarEntry{ty})</tt>.
+
+<p><strong>Page 118.</strong>
+Lines 5-9 should be
+<pre>
+fun transDec (venv,tenv,A.VarDec{name,typ=NONE,init,...}) =
+    let val {exp,ty} = transExp(venv,tenv,init)
+     in {tenv=tenv,
+         venv=S.enter(venv,name,E.VarEntry{ty=ty})}
+    end
+</pre>
+
+<p><strong>Page 120.</strong>
+Line 14 should be
+<pre>
+tenv' = S.enter(tenv,name,Types.NAME(name,ref NONE))
+</pre>
+(with parentheses instead of braces).
+
+<!-- Page 129, "more then six" should be "more than six" -->
+
+
+<p><strong>Page 133.</strong> 
+Program 6.3, line 14 should be indented one space less; and 
+should read, 
+<pre>
+            output := concat(output, s);  write("\n"))
+</pre>
+
+<p><strong>Page 136.</strong> 
+Sixth line from the bottom should refer to 
+"<tt>i1</tt> and <tt>i2</tt>" instead of "<tt>i0</tt> and <tt>i1</tt>".
+
+<p><strong>Page 137.</strong> 
+Table 6.4, column "Sparc", last two lines should refer to
+<tt>i1</tt> and <tt>i2</tt> instead of <tt>i0</tt> and <tt>i1</tt>.
+
+<p><strong>Page 141.</strong> 
+Line 10, <tt>label</tt> should be <tt>Temp.label</tt>. <br>
+Line 27, <tt>access: access</tt> 
+should be <tt>access: Translate.access</tt>.
+
+<p><strong>Page 142.</strong> 
+7th line from the bottom should be,<br>
+<tt>Translate.newlevel{parent=level<sub><i>g</i></sub>,name=<i>f</i>,formals=[false,false]}</tt>
+
+<p><strong>Page 151.</strong>
+Lines 11-12 should read,
+"MOVE(MEM(<i>e</i><sub>1</sub>),<i>e</i><sub>2</sub>)  Evaluate 
+<i>e</i><sub>1</sub>, yielding address <i>a</i>.  Then evaluate 
+<i>e</i><sub>2</sub>, and store the result into <i>wordSize</i> bytes
+of memory starting at <i>a</i>."
+
+<p><strong>Page 182.</strong>
+Algorithm 8.4, delete the comment "(All the successors of b are marked)" 
+which is false (the algorithm is still correct).
+
+<p><strong>Page 169.</strong>
+Line 20 has missing braces:
+<pre>
+datatype frag = PROC of {body: Tree.stm, frame: frame}
+</pre>
+Line 25 has missing braces:
+<pre>
+val procEntryExit: {level: level, body: exp} -> unit
+</pre>
+The last line on the page should refer to <tt>STRING</tt> fragments, not
+<tt>DATA</tt> fragments.
+
+
+<p><strong>Page 194.</strong>
+Figure 9.4, the third tree for STORE uses <strong>a</strong>
+where it should use <strong>d</strong>.
+
+<!-- Page 198, 4th line from bottom, "then then" should be "then" -->
+
+<p><strong>Page 198.</strong>
+The program shown under <strong>2. Classes of registers</strong>
+implements 
+<i>t</i><sub>3</sub>&lt;-<i>t</i><sub>1</sub>*<i>t</i><sub>2</sub>,
+not
+<i>t</i><sub>1</sub>&lt;-<i>t</i><sub>2</sub>*<i>t</i><sub>3</sub>
+as claimed.
+
+<p><strong>Page 219.</strong> 
+7th line after figure, "prove that b*b>0" should be 
+"prove that b*b>=0".
+
+<p><strong>Page 252.</strong> 
+Algorithm 11.11, line 8, should be:<br>
+unspill: <i>reg</i>[<i>t</i><sub><small>right</small></sub>]:=`<i>r</i><sub><small>(<i>n</i>+1)</small></sub>'; emit instruction to fetch <i>reg</i>[<i>t</i><sub><small>right</small></sub>]
+
+<!-- <p><strong>Page 283.</strong> 
+"Baker: Whever the mutator fetches a pointer <i>b</i> to a grey or white object"
+should be "Baker: Whever the mutator fetches a pointer <i>b</i> to a white object"
+-->
+
+<p><strong>Page 324.</strong> 
+Algorithm 15.10, box on the right: the formal
+parameters of <i>f <strong>'</strong></i> should be (<i>a</i><sub>1</sub>,...,<i>a</i><sub>i-1</sub>,<i>a</i><sub>i+1</sub>,...<i>a</i><sub>n</sub>).
+
+<p><strong>Page 334.</strong> 
+Lines 13 and 14, the two assignments to <tt>th.memo</tt> and <tt>th.func</tt>
+should be to <tt>mythunk.memo</tt> and <tt>mythunk.func</tt>.
+
+
+<p><strong>Page 337.</strong> 
+"It is wasteful to build all three lists" should be
+"It is wasteful to build these lists."
+
+<p><strong>Page 339.</strong> 
+Line 2 of the main text, "(string of integer)" should be "(string or integer)".
+
+<p><strong>Page 341.</strong> 
+First paragraph should read, "If (f,(1,1,0)) is in the set H, then we know
+that f is non strict in its third argument.  If (f,(1,1,0)) is never put 
+into H, then f must be strict in its third argument."
+
+<!-- <p><strong>Page 340.</strong> 
+In the rule for M(f(E_1,...,E_n),\sigma) in algorithm 15.17, the
+result is given as (f,(M(E_1,\sigma),...,M(E_n,\sigma))) \in H.
+It is not clear what this means, so it is better to write it as
+if (f,(M(E_1,\sigma),...,M(E_n,\sigma))) \in H then 1 else 0.
+-->
+
+<p><strong>Page 359.</strong> 
+In the clause labeled "<i>Occurrence of a variable</i>", replace the
+word <i>generalize</i> with <i>instantiate</i>.
+
+<p><strong>Page 360.</strong> 
+Last line of the page should read,
+"<i>Variable declaration with implicit type</i> clause of Algorithm 16.10."
+
+<p><strong>Page 385.</strong> 
+In the table, in the column headed <i>gen</i>[<i>s</i>], delete
+each of the three instances of "-<i>kill</i>[<i>s</i>]".
+
+<p><strong>Page 406.</strong> 
+Figure 18.2b is misleading because the graph shown has two "start" nodes.
+It is intended as a subgraph of some larger graph with a single
+entry node.
+
+<p><strong>Page 407.</strong> 
+Third line from bottom,
+the two equations <strong>D[s0]=...</strong> and 
+<strong>D[n]=...</strong>  have been inadvertantly jammed together,
+and should be on separate lines.
+
+<p><strong>Page 410.</strong> 
+Lines 7-9, definition of <strong>Nested loops</strong> should be:
+If <i>A</i> and <i>B</i> are loops with headers <i>a</i> and <i>b</i> 
+respectively, such that <i>a</i> not-equal <i>b</i> and
+<i>b</i> is in <i>A</i>, then the nodes of <i>B</i> are a proper subset
+of the nodes of <i>A</i>.
+
+<p><strong>Page 410.</strong> 
+Line 18 should be,<br>
+<i>h</i><sub><small>2</small></sub> if 
+<i>h</i><sub><small>2</small></sub> is in <i>loop</i>[<i>h</i><sub><small>1</small></sub>].
+
+<p><strong>Page 412.</strong> 
+In the paragraph headed by <strong>HOISTING</strong>,
+5th line, replace "<i>a</i>&lt;<i>b</i>" by 
+"<i>i</i>&gt;=<i>N</i> initially."
+
+<p><strong>Page 412.</strong> 
+Seventh line from bottom, "<strong>1.</strong> <i>d</i> dominates all
+loop exits, <i>or t</i> is not <i>live-out</i> of any loop exit node"
+is correct, but a better criterion is,<br>
+"<strong>1.</strong> <i>d</i> dominates all
+loop exits at which <i>t</i> is <i>live-out</i>;"
+
+<p><strong>Page 416.</strong> 
+Line 13-14 should be,<br>
+Assuming <i>j</i> is characterized by (<i>i,a,b</i>), then <i>k</i>
+is described by (<i>i,a.c,b.c</i>)
+or (<i>i,a+d,b</i>), depending on whether <i>k</i>'s definition was
+<i>j.c</i> or <i>j+d</i>.
+
+<p><strong>Page 418.</strong> 
+Line 14, "invariant values" should be "invariant values and in definitions
+of itself," <br>
+Line 19,
+"so therefore the comparison <i>j</i>&lt;<i>n</i> can be written as"
+should be
+"so therefore the comparison <i>k</i>&lt;<i>n</i> can be written as".
+
+<p><strong>Page 420.</strong> 
+Lines 13 and 14, labels <i>L</i><sub><small>1</small></sub>
+and <i>L</i><sub><small>2</small></sub>
+should be swapped:<br>
+if <i>u>j</i> goto <i>L</i><sub><small>1</small></sub> else goto <i>L</i><sub><small>2</small></sub></br>
+if <i>u&lt;=j</i> goto <i>L</i><sub><small>2</small></sub> else goto <i>L</i><sub><small>1</small></sub>
+
+<p><strong>Page 421.</strong> 
+Line 3 should have <img alt="Delta" src="../text/Delta.gif"> in front of
+<i>k</i><sub><small>1</small></sub> and <i>k<sub><small>m</small></sub></i>:<br>
+<i>k</i>>=0
+<img alt="and" src="../text/wedge.gif">
+<img alt="Delta" src="../text/Delta.gif"><i>k</i><sub><small>1</small></sub>>=0
+<img alt="and" src="../text/wedge.gif"> . . . 
+<img alt="and" src="../text/wedge.gif">
+<img alt="Delta" src="../text/Delta.gif"><i>k<sub><small>m</small></sub></i>>=0
+
+
+
+<p><strong>Page 422.</strong> 
+Lines 24 and 25, labels <i>L</i><sub><small>1</small></sub>
+and <i>L</i><sub><small>2</small></sub>
+should be swapped:<br>
+if <i>u'>=j</i> goto <i>L</i><sub><small>1</small></sub> else goto <i>L</i><sub><small>2</small></sub></br>
+if <i>u'&lt;j</i> goto <i>L</i><sub><small>2</small></sub> else goto <i>L</i><sub><small>1</small></sub>
+
+
+
+<p><strong>Page 431.</strong> 
+Figure 19.4 (b,f,g), block 6 should increment <i>k</i> by 2, not by 1.
+
+<p><strong>Page 432.</strong> 
+Lines 10-11 should read,<br>
+1. If <i>x</i> is the <i>i</i>th argument of a phi function in block <i>n</i>,
+then the definition of <i>x</i> dominates the <i>i</i>th predecessor
+of <i>n</i>.
+
+<p><strong>Page 435.</strong> 
+Algorithm 19.6, lines 10 and 14, all references to
+<i>A</i><sub><small>phi</small></sub>[<i>n</i>]
+should refer to <i>A</i><sub><small>phi</small></sub>[<i>Y</i>].<br>
+Algorithm 19.6, line 15 should read "<strong>if</strong> <i>a</i> not in 
+<i>A</i><sub><small>orig</small></sub>[<i>Y</i>]".<br>
+First full paragraph on page 435 should read, 
+<blockquote>
+Algorithm 19.6 starts with a set <i>V</i> of variables, 
+a graph <i>G</i> of control-flow nodes -- 
+each node is a basic block of statements --
+and for each node <i>n</i> a set <i>A</i><sub><small>orig</small></sub>[<i>n</i>]
+of variables defined in node <i>n</i>.
+The algorithm computes <i>A</i><sub><small>phi</small></sub>[<i>a</i>], the
+set of nodes that must have phi-functions for variable <i>a</i>.
+Note that sometimes a node may contain an ordinary definition <i>and</i> a 
+phi-function for the same variable; 
+for example, in Figure 19.3b, <i>a</i> is in 
+<i>A</i><sub><small>orig</small></sub>[2] and node 2 is in <i>A</i><sub><small>phi</small></sub>[<i>a</i>].
+</blockquote>
+
+<p><strong>Page 438.</strong> 
+Last paragraph should read, 
+<blockquote>
+Suppose there is a CFG path from <i>a</i> to <i>b</i> but <i>a</i> is
+not an ancestor of <i>b</i>.  This means that some edge on the path
+is not a spanning-tree edge, so <i>b</i> must have been reached
+in the depth-first search before <i>a</i> was
+(otherwise, after
+visiting <i>a</i> the search would continue along tree-edges to <i>b</i>).
+Thus, <i>dfnum</i>(<i>a</i>) > <i>dfnum</i>(<i>b</i>).
+</blockquote>
+
+<p><strong>Page 450.</strong> 
+Figure 19.13 (a), block 6 should increment <i>k</i><sub>2</sub> by 2, not by 1.
+
+<p><strong>Page 460.</strong> 
+Figure 19.19, block 6 (on left), and <tt>else</tt> clause of
+if-statement (on right) should increment <i>k</i><sub>2</sub> by 2, not by 1.
+<br>
+Figure 19.19, right-hand side, line 8 should refer to <i>j</i><sub>2</sub>,
+not <i>j</i><sub>1</sub>.
+
+<p><strong>Page 470.</strong> 
+Line 4, "hypothetical machine" should be "MIPS R4000".
+
+<p><strong>Page 471.</strong> 
+Figure 20.2, lines 5-6 of the caption should read,
+<blockquote>
+nor four cycles later (because of <strong>Add</strong> and 
+<strong>Round</strong> hazards).  But if there were two adders and
+two rounding units, then an ADD <i>could</i> be started four
+</blockquote>
+
+<p><strong>Page 482.</strong> 
+Figure 20.10, steps 2-4 should be as shown:
+<br>
+<img src="../text/fig20-10.gif" alt="Figure 20.10, corrected">
+
+
+
+<p><strong>Page 487.</strong> 
+The first full sentence should read,
+<blockquote>
+A mispredict rate of 10% can result in very many stalled
+instructions -- if each mispredict stalls 11 instruction slots,
+as described in the example on page 484,
+and there is one mispredict every 10 branches, and one-sixth of all
+instructions are branches, then 18% of
+the processor's time is spent waiting for mispredicted instruction
+fetches. 
+</blockquote>
+
+<p><strong>Page 489.</strong> 
+Exercise 20.2g, "Run Algorithm itermod" should be "Run Algorithm 20.9".
+
+
+<p><strong>Page 519.</strong>
+4th line from bottom, change both occurrences of "<tt>integer</tt>"
+to "<tt>int</tt>".
+
+<!-- Page 523, line 6, "array of id" should be "array of type-id" -->
+
+</body>
+</html>
