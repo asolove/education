@@ -89,9 +89,9 @@ struct string *concat(struct string *a, struct string *b)
        struct string *t = (struct string *)malloc(sizeof(int)+n);
        t->length=n;
        for (i=0;i<a->length;i++)
-	 t->chars[i]=a->chars[i];
+         t->chars[i]=a->chars[i];
        for(i=0;i<b->length;i++)
-	 t->chars[i+a->length]=b->chars[i];
+         t->chars[i+a->length]=b->chars[i];
        return t;
      }
 }

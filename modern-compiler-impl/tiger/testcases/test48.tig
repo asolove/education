@@ -3,9 +3,9 @@
    are not in the same  batch of mutually recursive functions. 
    See also test39 */
 let
-	function g(a:int):int = a
-	type t = int
-	function g(a:int):int = a
+        function g(a:int):int = a
+        type t = int
+        function g(a:int):int = a
 in
-	0
+        0
 end

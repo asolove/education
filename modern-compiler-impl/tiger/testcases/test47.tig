@@ -3,9 +3,9 @@
    are not in the same  batch of mutually recursive types.
    See also test38 */
 let
-	type a = int
-	var b := 4
-	type a = string
+        type a = int
+        var b := 4
+        type a = string
 in
-	0
+        0
 end

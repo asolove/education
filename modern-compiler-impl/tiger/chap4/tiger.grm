@@ -24,7 +24,7 @@ structure A = Absyn
 %name Tiger
 
 %keyword WHILE FOR TO BREAK LET IN END FUNCTION VAR TYPE ARRAY IF THEN ELSE 
-	DO OF NIL
+        DO OF NIL
 
 %prefer THEN ELSE LPAREN
 
@@ -34,7 +34,7 @@ structure A = Absyn
 
 %%
 
-program	: exp				(exp)
+program        : exp                                (exp)
 
-	
-exp: NIL		(A.NilExp)
+        
+exp: NIL                (A.NilExp)

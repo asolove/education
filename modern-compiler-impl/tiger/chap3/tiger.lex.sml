@@ -21,11 +21,11 @@ val comLevel = ref 0
 fun err(p1,p2) = ErrorMsg.error p1
 
 val eof = fn () => 
-	   let val pos = Int.max(!stringstart+2, hd(!linePos))
-	    in if !comLevel>0 then err (!stringstart,pos) "unclosed comment"
-		  	      else ();
-	       Tokens.EOF(pos,pos)
-	   end	
+           let val pos = Int.max(!stringstart+2, hd(!linePos))
+            in if !comLevel>0 then err (!stringstart,pos) "unclosed comment"
+                                else ();
+               Tokens.EOF(pos,pos)
+           end        
 fun addString (s:char) = charlist := s :: (!charlist)
 fun makeString () = (implode(rev(!charlist)) before charlist := nil)
 
@@ -36,7 +36,7 @@ fun makeInt s =
 end (* end of user routines *)
 exception LexError (* raised if illegal leaf action tried *)
 structure Internal =
-	struct
+        struct
 
 datatype yyfinstate = N of int
 type statedata = {fin : yyfinstate list, trans: string}
@@ -816,8 +816,8 @@ in Vector.fromList(map g
 {fin = [(N 171)], trans = 0}])
 end
 structure StartStates =
-	struct
-	datatype yystartstate = STARTSTATE of int
+        struct
+        datatype yystartstate = STARTSTATE of int
 
 (* start state definitions *)
 
@@ -828,35 +828,35 @@ val S = STARTSTATE 5;
 
 end
 type result = UserDeclarations.lexresult
-	exception LexerError (* raised if illegal leaf action tried *)
+        exception LexerError (* raised if illegal leaf action tried *)
 end
 
 fun makeLexer yyinput = 
 let 
-	val yyb = ref "\n" 		(* buffer *)
-	val yybl = ref 1		(*buffer length *)
-	val yybufpos = ref 1		(* location of next character to use *)
-	val yygone = ref 1		(* position in file of beginning of buffer *)
-	val yydone = ref false		(* eof found yet? *)
-	val yybegin = ref 1		(*Current 'start state' for lexer *)
+        val yyb = ref "\n"                 (* buffer *)
+        val yybl = ref 1                (*buffer length *)
+        val yybufpos = ref 1                (* location of next character to use *)
+        val yygone = ref 1                (* position in file of beginning of buffer *)
+        val yydone = ref false                (* eof found yet? *)
+        val yybegin = ref 1                (*Current 'start state' for lexer *)
 
-	val YYBEGIN = fn (Internal.StartStates.STARTSTATE x) =>
-		 yybegin := x
+        val YYBEGIN = fn (Internal.StartStates.STARTSTATE x) =>
+                 yybegin := x
 
 fun lex () : Internal.result =
 let fun continue() = lex() in
   let fun scan (s,AcceptingLeaves : Internal.yyfinstate list list,l,i0) =
-	let fun action (i,nil) = raise LexError
-	| action (i,nil::l) = action (i-1,l)
-	| action (i,(node::acts)::l) =
-		case node of
-		    Internal.N yyk => 
-			(let val yytext = substring(!yyb,i0,i-i0)
-			     val yypos = i0+ !yygone
-			open UserDeclarations Internal.StartStates
+        let fun action (i,nil) = raise LexError
+        | action (i,nil::l) = action (i-1,l)
+        | action (i,(node::acts)::l) =
+                case node of
+                    Internal.N yyk => 
+                        (let val yytext = substring(!yyb,i0,i-i0)
+                             val yypos = i0+ !yygone
+                        open UserDeclarations Internal.StartStates
  in (yybufpos := i; case yyk of 
 
-			(* Application actions *)
+                        (* Application actions *)
 
   10 => (Tokens.RBRACE(yypos,yypos+1))
 | 101 => (Tokens.VAR(yypos,yypos+3))
@@ -870,38 +870,38 @@ let fun continue() = lex() in
 | 131 => (Tokens.OF(yypos,yypos+2))
 | 134 => (Tokens.ID(yytext,yypos,yypos+size yytext))
 | 137 => (Tokens.INT(makeInt yytext
-		    handle Overflow => (err (yypos,yypos+size yytext)
-					   "integer too large";
-				        1),
-			yypos,yypos+size yytext))
+                    handle Overflow => (err (yypos,yypos+size yytext)
+                                           "integer too large";
+                                        1),
+                        yypos,yypos+size yytext))
 | 139 => (charlist := nil; stringstart := yypos;
-			YYBEGIN S; continue())
+                        YYBEGIN S; continue())
 | 14 => (Tokens.RBRACK(yypos,yypos+1))
 | 142 => (YYBEGIN A; stringstart := yypos; comLevel := 1; continue())
 | 145 => (err (yypos,yypos+1) "unmatched close comment";
-		    continue())
+                    continue())
 | 147 => (err (yypos,yypos) "non-Ascii character";
-		    continue())
+                    continue())
 | 149 => (err (yypos,yypos) "illegal token";
-		    continue())
+                    continue())
 | 152 => (inc comLevel; continue())
 | 154 => (inc lineNum; linePos := yypos :: !linePos; continue())
 | 157 => (dec comLevel; if !comLevel=0 then YYBEGIN INITIAL else (); continue())
 | 159 => (continue())
 | 16 => (Tokens.COLON(yypos,yypos+1))
 | 161 => (YYBEGIN INITIAL; Tokens.STRING(makeString(),
-				!stringstart,yypos+1))
+                                !stringstart,yypos+1))
 | 163 => (err (!stringstart,yypos) "unclosed string";
-		    inc lineNum; linePos := yypos :: !linePos;
-		    YYBEGIN INITIAL; Tokens.STRING(makeString(),!stringstart,yypos))
+                    inc lineNum; linePos := yypos :: !linePos;
+                    YYBEGIN INITIAL; Tokens.STRING(makeString(),!stringstart,yypos))
 | 166 => (inc lineNum; linePos := yypos :: !linePos;
-		    YYBEGIN F; continue())
+                    YYBEGIN F; continue())
 | 169 => (YYBEGIN F; continue())
 | 171 => (inc lineNum; linePos := yypos :: !linePos; continue())
 | 174 => (continue())
 | 176 => (YYBEGIN S; stringstart := yypos; continue())
 | 178 => (err (!stringstart,yypos)  "unclosed string"; 
-		    YYBEGIN INITIAL; Tokens.STRING(makeString(),!stringstart,yypos+1))
+                    YYBEGIN INITIAL; Tokens.STRING(makeString(),!stringstart,yypos+1))
 | 18 => (Tokens.SEMICOLON(yypos,yypos+1))
 | 181 => (addString #"\t"; continue())
 | 184 => (addString #"\n"; continue())
@@ -910,9 +910,9 @@ let fun continue() = lex() in
 | 194 => (addString(chr(ord(String.sub(yytext,2))-ord(#"@"))); 
                     continue())
 | 199 => (let val x = ord(String.sub(yytext,1))*100
-	     +ord(String.sub(yytext,2))*10
-	     +ord(String.sub(yytext,3))
-	     -(ord #"0" * 111)
+             +ord(String.sub(yytext,2))*10
+             +ord(String.sub(yytext,3))
+             -(ord #"0" * 111)
   in (if x>255
       then err (yypos,yypos+4) "illegal ascii escape"
       else addString(chr x);
@@ -921,7 +921,7 @@ let fun continue() = lex() in
 | 2 => (continue())
 | 20 => (Tokens.LPAREN(yypos,yypos+1))
 | 201 => (err (yypos,yypos+1) "illegal string escape"; 
-		    continue())
+                    continue())
 | 203 => (addString(String.sub(yytext,0)); continue())
 | 22 => (Tokens.RPAREN(yypos,yypos+1))
 | 24 => (Tokens.DOT(yypos,yypos+1))
@@ -952,35 +952,35 @@ let fun continue() = lex() in
 | 97 => (Tokens.FUNCTION(yypos,yypos+8))
 | _ => raise Internal.LexerError
 
-		) end )
+                ) end )
 
-	val {fin,trans} = Vector.sub(Internal.tab, s)
-	val NewAcceptingLeaves = fin::AcceptingLeaves
-	in if l = !yybl then
-	     if trans = #trans(Vector.sub(Internal.tab,0))
-	       then action(l,NewAcceptingLeaves
-) else	    let val newchars= if !yydone then "" else yyinput 1024
-	    in if (size newchars)=0
-		  then (yydone := true;
-		        if (l=i0) then UserDeclarations.eof ()
-		                  else action(l,NewAcceptingLeaves))
-		  else (if i0=l then yyb := newchars
-		     else yyb := substring(!yyb,i0,l-i0)^newchars;
-		     yygone := !yygone+i0;
-		     yybl := size (!yyb);
-		     scan (s,AcceptingLeaves,l-i0,0))
-	    end
-	  else let val NewChar = Char.ord(String.sub(!yyb,l))
-		val NewState = if NewChar<128 then Char.ord(String.sub(trans,NewChar)) else Char.ord(String.sub(trans,128))
-		in if NewState=0 then action(l,NewAcceptingLeaves)
-		else scan(NewState,NewAcceptingLeaves,l+1,i0)
-	end
-	end
+        val {fin,trans} = Vector.sub(Internal.tab, s)
+        val NewAcceptingLeaves = fin::AcceptingLeaves
+        in if l = !yybl then
+             if trans = #trans(Vector.sub(Internal.tab,0))
+               then action(l,NewAcceptingLeaves
+) else            let val newchars= if !yydone then "" else yyinput 1024
+            in if (size newchars)=0
+                  then (yydone := true;
+                        if (l=i0) then UserDeclarations.eof ()
+                                  else action(l,NewAcceptingLeaves))
+                  else (if i0=l then yyb := newchars
+                     else yyb := substring(!yyb,i0,l-i0)^newchars;
+                     yygone := !yygone+i0;
+                     yybl := size (!yyb);
+                     scan (s,AcceptingLeaves,l-i0,0))
+            end
+          else let val NewChar = Char.ord(String.sub(!yyb,l))
+                val NewState = if NewChar<128 then Char.ord(String.sub(trans,NewChar)) else Char.ord(String.sub(trans,128))
+                in if NewState=0 then action(l,NewAcceptingLeaves)
+                else scan(NewState,NewAcceptingLeaves,l+1,i0)
+        end
+        end
 (*
-	val start= if substring(!yyb,!yybufpos-1,1)="\n"
+        val start= if substring(!yyb,!yybufpos-1,1)="\n"
 then !yybegin+1 else !yybegin
 *)
-	in scan(!yybegin (* start *),nil,!yybufpos,!yybufpos)
+        in scan(!yybegin (* start *),nil,!yybufpos,!yybufpos)
     end
 end
   in lex
