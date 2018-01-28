@@ -1,107 +1,7 @@
-structure Mlex  = struct
-
-    structure yyInput : sig
-
-        type stream
-        val mkStream : (int -> string) -> stream
-        val fromStream : TextIO.StreamIO.instream -> stream
-        val getc : stream -> (Char.char * stream) option
-        val getpos : stream -> int
-        val getlineNo : stream -> int
-        val subtract : stream * stream -> string
-        val eof : stream -> bool
-        val lastWasNL : stream -> bool
-
-      end = struct
-
-        structure TIO = TextIO
-        structure TSIO = TIO.StreamIO
-        structure TPIO = TextPrimIO
-
-        datatype stream = Stream of {
-            strm : TSIO.instream,
-            id : int,  (* track which streams originated 
-                        * from the same stream *)
-            pos : int,
-            lineNo : int,
-            lastWasNL : bool
-          }
-
-        local
-          val next = ref 0
-        in
-        fun nextId() = !next before (next := !next + 1)
-        end
-
-        val initPos = 2 (* ml-lex bug compatibility *)
-
-        fun mkStream inputN = let
-              val strm = TSIO.mkInstream 
-                           (TPIO.RD {
-                                name = "lexgen",
-                                chunkSize = 4096,
-                                readVec = SOME inputN,
-                                readArr = NONE,
-                                readVecNB = NONE,
-                                readArrNB = NONE,
-                                block = NONE,
-                                canInput = NONE,
-                                avail = (fn () => NONE),
-                                getPos = NONE,
-                                setPos = NONE,
-                                endPos = NONE,
-                                verifyPos = NONE,
-                                close = (fn () => ()),
-                                ioDesc = NONE
-                              }, "")
-              in 
-                Stream {strm = strm, id = nextId(), pos = initPos, lineNo = 1,
-                        lastWasNL = true}
-              end
-
-        fun fromStream strm = Stream {
-                strm = strm, id = nextId(), pos = initPos, lineNo = 1, lastWasNL = true
-              }
-
-        fun getc (Stream {strm, pos, id, lineNo, ...}) = (case TSIO.input1 strm
-              of NONE => NONE
-               | SOME (c, strm') => 
-                   SOME (c, Stream {
-                                strm = strm', 
-                                pos = pos+1, 
-                                id = id,
-                                lineNo = lineNo + 
-                                         (if c = #"\n" then 1 else 0),
-                                lastWasNL = (c = #"\n")
-                              })
-             (* end case*))
-
-        fun getpos (Stream {pos, ...}) = pos
-
-        fun getlineNo (Stream {lineNo, ...}) = lineNo
-
-        fun subtract (new, old) = let
-              val Stream {strm = strm, pos = oldPos, id = oldId, ...} = old
-              val Stream {pos = newPos, id = newId, ...} = new
-              val (diff, _) = if newId = oldId andalso newPos >= oldPos
-                              then TSIO.inputN (strm, newPos - oldPos)
-                              else raise Fail 
-                                "BUG: yyInput: attempted to subtract incompatible streams"
-              in 
-                diff 
-              end
-
-        fun eof s = not (isSome (getc s))
-
-        fun lastWasNL (Stream {lastWasNL, ...}) = lastWasNL
-
-      end
-
-    datatype yystart_state = 
-INITIAL
-    structure UserDeclarations = 
+structure Mlex=
+   struct
+    structure UserDeclarations =
       struct
-
 type pos = int
 type lexresult = Tokens.token
 
@@ -112,170 +12,182 @@ fun err(p1,p2) = ErrorMsg.error p1
 fun eof() = let val pos = hd(!linePos) in Tokens.EOF(pos,pos) end
 
 
+end (* end of user routines *)
+exception LexError (* raised if illegal leaf action tried *)
+structure Internal =
+	struct
 
-
-      end
-
-    datatype yymatch 
-      = yyNO_MATCH
-      | yyMATCH of yyInput.stream * action * yymatch
-    withtype action = yyInput.stream * yymatch -> UserDeclarations.lexresult
-
-    local
-
-    val yytable = 
-Vector.fromList []
-    fun mk yyins = let
-        (* current start state *)
-        val yyss = ref INITIAL
-        fun YYBEGIN ss = (yyss := ss)
-        (* current input stream *)
-        val yystrm = ref yyins
-        (* get one char of input *)
-        val yygetc = yyInput.getc
-        (* create yytext *)
-        fun yymktext(strm) = yyInput.subtract (strm, !yystrm)
-        open UserDeclarations
-        fun lex 
-(yyarg as ()) = let 
-     fun continue() = let
-            val yylastwasn = yyInput.lastWasNL (!yystrm)
-            fun yystuck (yyNO_MATCH) = raise Fail "stuck state"
-              | yystuck (yyMATCH (strm, action, old)) = 
-                  action (strm, old)
-            val yypos = yyInput.getpos (!yystrm)
-            val yygetlineNo = yyInput.getlineNo
-            fun yyactsToMatches (strm, [],          oldMatches) = oldMatches
-              | yyactsToMatches (strm, act::acts, oldMatches) = 
-                  yyMATCH (strm, act, yyactsToMatches (strm, acts, oldMatches))
-            fun yygo actTable = 
-                (fn (~1, _, oldMatches) => yystuck oldMatches
-                  | (curState, strm, oldMatches) => let
-                      val (transitions, finals') = Vector.sub (yytable, curState)
-                      val finals = List.map (fn i => Vector.sub (actTable, i)) finals'
-                      fun tryfinal() = 
-                            yystuck (yyactsToMatches (strm, finals, oldMatches))
-                      fun find (c, []) = NONE
-                        | find (c, (c1, c2, s)::ts) = 
-                            if c1 <= c andalso c <= c2 then SOME s
-                            else find (c, ts)
-                      in case yygetc strm
-                          of SOME(c, strm') => 
-                               (case find (c, transitions)
-                                 of NONE => tryfinal()
-                                  | SOME n => 
-                                      yygo actTable
-                                        (n, strm', 
-                                         yyactsToMatches (strm, finals, oldMatches)))
-                           | NONE => tryfinal()
-                      end)
-            in 
-let
-fun yyAction0 (strm, lastMatch : yymatch) = (yystrm := strm;
-      (lineNum := !lineNum+1; linePos := yypos :: !linePos; continue()))
-fun yyAction1 (strm, lastMatch : yymatch) = (yystrm := strm;
-      (Tokens.COMMA(yypos,yypos+1)))
-fun yyAction2 (strm, lastMatch : yymatch) = (yystrm := strm;
-      (Tokens.VAR(yypos,yypos+3)))
-fun yyAction3 (strm, lastMatch : yymatch) = (yystrm := strm;
-      (Tokens.INT(123,yypos,yypos+3)))
-fun yyAction4 (strm, lastMatch : yymatch) = let
-      val yytext = yymktext(strm)
-      in
-        yystrm := strm;
-        (ErrorMsg.error yypos ("illegal character " ^ yytext); continue())
-      end
-fun yyQ7 (strm, lastMatch : yymatch) = (case (yygetc(strm))
-       of NONE => yyAction2(strm, yyNO_MATCH)
-        | SOME(inp, strm') => yyAction2(strm, yyNO_MATCH)
-      (* end case *))
-fun yyQ6 (strm, lastMatch : yymatch) = (case (yygetc(strm))
-       of NONE => yystuck(lastMatch)
-        | SOME(inp, strm') =>
-            if inp = #"r"
-              then yyQ7(strm', lastMatch)
-              else yystuck(lastMatch)
-      (* end case *))
-fun yyQ5 (strm, lastMatch : yymatch) = (case (yygetc(strm))
-       of NONE => yyAction4(strm, yyNO_MATCH)
-        | SOME(inp, strm') =>
-            if inp = #"a"
-              then yyQ6(strm', yyMATCH(strm, yyAction4, yyNO_MATCH))
-              else yyAction4(strm, yyNO_MATCH)
-      (* end case *))
-fun yyQ9 (strm, lastMatch : yymatch) = (case (yygetc(strm))
-       of NONE => yyAction3(strm, yyNO_MATCH)
-        | SOME(inp, strm') => yyAction3(strm, yyNO_MATCH)
-      (* end case *))
-fun yyQ8 (strm, lastMatch : yymatch) = (case (yygetc(strm))
-       of NONE => yystuck(lastMatch)
-        | SOME(inp, strm') =>
-            if inp = #"3"
-              then yyQ9(strm', lastMatch)
-              else yystuck(lastMatch)
-      (* end case *))
-fun yyQ4 (strm, lastMatch : yymatch) = (case (yygetc(strm))
-       of NONE => yyAction4(strm, yyNO_MATCH)
-        | SOME(inp, strm') =>
-            if inp = #"2"
-              then yyQ8(strm', yyMATCH(strm, yyAction4, yyNO_MATCH))
-              else yyAction4(strm, yyNO_MATCH)
-      (* end case *))
-fun yyQ3 (strm, lastMatch : yymatch) = (case (yygetc(strm))
-       of NONE => yyAction1(strm, yyNO_MATCH)
-        | SOME(inp, strm') => yyAction1(strm, yyNO_MATCH)
-      (* end case *))
-fun yyQ2 (strm, lastMatch : yymatch) = (case (yygetc(strm))
-       of NONE => yyAction0(strm, yyNO_MATCH)
-        | SOME(inp, strm') => yyAction0(strm, yyNO_MATCH)
-      (* end case *))
-fun yyQ1 (strm, lastMatch : yymatch) = (case (yygetc(strm))
-       of NONE => yyAction4(strm, yyNO_MATCH)
-        | SOME(inp, strm') => yyAction4(strm, yyNO_MATCH)
-      (* end case *))
-fun yyQ0 (strm, lastMatch : yymatch) = (case (yygetc(strm))
-       of NONE =>
-            if yyInput.eof(!(yystrm))
-              then UserDeclarations.eof(yyarg)
-              else yystuck(lastMatch)
-        | SOME(inp, strm') =>
-            if inp = #"-"
-              then yyQ1(strm', lastMatch)
-            else if inp < #"-"
-              then if inp = #"\v"
-                  then yyQ1(strm', lastMatch)
-                else if inp < #"\v"
-                  then if inp = #"\n"
-                      then yyQ2(strm', lastMatch)
-                      else yyQ1(strm', lastMatch)
-                else if inp = #","
-                  then yyQ3(strm', lastMatch)
-                  else yyQ1(strm', lastMatch)
-            else if inp = #"2"
-              then yyQ1(strm', lastMatch)
-            else if inp < #"2"
-              then if inp = #"1"
-                  then yyQ4(strm', lastMatch)
-                  else yyQ1(strm', lastMatch)
-            else if inp = #"v"
-              then yyQ5(strm', lastMatch)
-              else yyQ1(strm', lastMatch)
-      (* end case *))
-in
-  (case (!(yyss))
-   of INITIAL => yyQ0(!(yystrm), yyNO_MATCH)
-  (* end case *))
+datatype yyfinstate = N of int
+type statedata = {fin : yyfinstate list, trans: string}
+(* transition & final state table *)
+val tab = let
+val s = [ 
+ (0, 
+"\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
+\\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
+\\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
+\\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
+\\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
+\\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
+\\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
+\\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
+\\000"
+),
+ (1, 
+"\003\003\003\003\003\003\003\003\003\003\011\003\003\003\003\003\
+\\003\003\003\003\003\003\003\003\003\003\003\003\003\003\003\003\
+\\003\003\003\003\003\003\003\003\003\003\003\003\010\003\003\003\
+\\003\007\003\003\003\003\003\003\003\003\003\003\003\003\003\003\
+\\003\003\003\003\003\003\003\003\003\003\003\003\003\003\003\003\
+\\003\003\003\003\003\003\003\003\003\003\003\003\003\003\003\003\
+\\003\003\003\003\003\003\003\003\003\003\003\003\003\003\003\003\
+\\003\003\003\003\003\003\004\003\003\003\003\003\003\003\003\003\
+\\003"
+),
+ (4, 
+"\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
+\\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
+\\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
+\\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
+\\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
+\\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
+\\000\005\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
+\\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
+\\000"
+),
+ (5, 
+"\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
+\\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
+\\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
+\\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
+\\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
+\\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
+\\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
+\\000\000\006\000\000\000\000\000\000\000\000\000\000\000\000\000\
+\\000"
+),
+ (7, 
+"\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
+\\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
+\\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
+\\000\000\008\000\000\000\000\000\000\000\000\000\000\000\000\000\
+\\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
+\\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
+\\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
+\\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
+\\000"
+),
+ (8, 
+"\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
+\\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
+\\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
+\\000\000\000\009\000\000\000\000\000\000\000\000\000\000\000\000\
+\\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
+\\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
+\\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
+\\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
+\\000"
+),
+(0, "")]
+fun f x = x 
+val s = List.map f (List.rev (tl (List.rev s))) 
+exception LexHackingError 
+fun look ((j,x)::r, i: int) = if i = j then x else look(r, i) 
+  | look ([], i) = raise LexHackingError
+fun g {fin=x, trans=i} = {fin=x, trans=look(s,i)} 
+in Vector.fromList(List.map g 
+[{fin = [], trans = 0},
+{fin = [], trans = 1},
+{fin = [], trans = 1},
+{fin = [(N 13)], trans = 0},
+{fin = [(N 13)], trans = 4},
+{fin = [], trans = 5},
+{fin = [(N 7)], trans = 0},
+{fin = [(N 13)], trans = 7},
+{fin = [], trans = 8},
+{fin = [(N 11)], trans = 0},
+{fin = [(N 3),(N 13)], trans = 0},
+{fin = [(N 1)], trans = 0}])
 end
-            end
-          in 
-            continue()           
-            handle IO.Io{cause, ...} => raise cause
-          end
-        in 
-          lex 
-        end
-    in
-    fun makeLexer yyinputN = mk (yyInput.mkStream yyinputN)
-    end
+structure StartStates =
+	struct
+	datatype yystartstate = STARTSTATE of int
 
+(* start state definitions *)
+
+val INITIAL = STARTSTATE 1;
+
+end
+type result = UserDeclarations.lexresult
+	exception LexerError (* raised if illegal leaf action tried *)
+end
+
+fun makeLexer yyinput =
+let	val yygone0=1
+	val yyb = ref "\n" 		(* buffer *)
+	val yybl = ref 1		(*buffer length *)
+	val yybufpos = ref 1		(* location of next character to use *)
+	val yygone = ref yygone0	(* position in file of beginning of buffer *)
+	val yydone = ref false		(* eof found yet? *)
+	val yybegin = ref 1		(*Current 'start state' for lexer *)
+
+	val YYBEGIN = fn (Internal.StartStates.STARTSTATE x) =>
+		 yybegin := x
+
+fun lex () : Internal.result =
+let fun continue() = lex() in
+  let fun scan (s,AcceptingLeaves : Internal.yyfinstate list list,l,i0) =
+	let fun action (i,nil) = raise LexError
+	| action (i,nil::l) = action (i-1,l)
+	| action (i,(node::acts)::l) =
+		case node of
+		    Internal.N yyk => 
+			(let fun yymktext() = String.substring(!yyb,i0,i-i0)
+			     val yypos = i0+ !yygone
+			open UserDeclarations Internal.StartStates
+ in (yybufpos := i; case yyk of 
+
+			(* Application actions *)
+
+  1 => (lineNum := !lineNum+1; linePos := yypos :: !linePos; continue())
+| 11 => (Tokens.INT(123,yypos,yypos+3))
+| 13 => let val yytext=yymktext() in ErrorMsg.error yypos ("illegal character " ^ yytext); continue() end
+| 3 => (Tokens.COMMA(yypos,yypos+1))
+| 7 => (Tokens.VAR(yypos,yypos+3))
+| _ => raise Internal.LexerError
+
+		) end )
+
+	val {fin,trans} = Unsafe.Vector.sub(Internal.tab, s)
+	val NewAcceptingLeaves = fin::AcceptingLeaves
+	in if l = !yybl then
+	     if trans = #trans(Vector.sub(Internal.tab,0))
+	       then action(l,NewAcceptingLeaves
+) else	    let val newchars= if !yydone then "" else yyinput 1024
+	    in if (String.size newchars)=0
+		  then (yydone := true;
+		        if (l=i0) then UserDeclarations.eof ()
+		                  else action(l,NewAcceptingLeaves))
+		  else (if i0=l then yyb := newchars
+		     else yyb := String.substring(!yyb,i0,l-i0)^newchars;
+		     yygone := !yygone+i0;
+		     yybl := String.size (!yyb);
+		     scan (s,AcceptingLeaves,l-i0,0))
+	    end
+	  else let val NewChar = Char.ord(Unsafe.CharVector.sub(!yyb,l))
+		val NewChar = if NewChar<128 then NewChar else 128
+		val NewState = Char.ord(Unsafe.CharVector.sub(trans,NewChar))
+		in if NewState=0 then action(l,NewAcceptingLeaves)
+		else scan(NewState,NewAcceptingLeaves,l+1,i0)
+	end
+	end
+(*
+	val start= if String.substring(!yyb,!yybufpos-1,1)="\n"
+then !yybegin+1 else !yybegin
+*)
+	in scan(!yybegin (* start *),nil,!yybufpos,!yybufpos)
+    end
+end
+  in lex
   end
+end
