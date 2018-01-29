@@ -4,4 +4,12 @@
  ((name polynomial)
   (libraries (core core_bench))
   (preprocess (pps (ppx_jane)))
+  (modules (polynomial))
+ ))
+
+(executable
+ ((name maximal_induced_subgraph)
+  (libraries (core core_bench))
+  (preprocess (pps (ppx_jane)))
+  (modules (maximal_induced_subgraph))
  ))
