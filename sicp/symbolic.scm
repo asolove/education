@@ -1,7 +1,5 @@
-#lang racket
-
 ; Global table of generic operations
-(define *op-table* (make-hash))
+(define *op-table* (make-hash-table))
 
 (define (put op type proc)
   (hash-set! *op-table* (list op type) proc))
@@ -40,6 +38,8 @@
 (define (div x y) (apply-generic 'div x y))
 (define (equ? x y) (apply-generic 'equ? x y))
 (define (=zero? x) (apply-generic '=zero? x))
+(define (real-part c) (apply-generic 'real-part c))
+(define (imag-part c) (apply-generic 'imag-part c))
 
 ; Number implementation
 (define (install-scheme-number-package)
@@ -104,10 +104,11 @@
   (put 'make '(rational)
        (lambda (n d) (tag (make-rat n d))))
   'done)
+
 (install-rational-package)
 
 (define (make-rational n d)
-  ((get 'make 'rational) n d))
+  ((get 'make '(rational)) n d))
 
 (define (square x) (* x x))
 
@@ -116,8 +117,8 @@
 
 (define (install-rectangular-package)
   ;; internal procedures
-  (define (real-part z) (car z))
-  (define (imag-part z) (cdr z))
+  (define (real-part-rectangular z) (car z))
+  (define (imag-part-rectangular z) (cdr z))
   (define (make-from-real-imag x y) (cons x y))
   (define (magnitude z)
     (sqrt (+ (square (real-part z))
@@ -128,8 +129,8 @@
     (cons (* r (cos a)) (* r (sin a))))
   ;; interface to the rest of the system
   (define (tag x) (attach-tag 'rectangular x))
-  (put 'real-part '(rectangular) real-part)
-  (put 'imag-part '(rectangular) imag-part)
+  (put 'real-part '(rectangular) real-part-rectangular)
+  (put 'imag-part '(rectangular) imag-part-rectangular)
   (put 'magnitude '(rectangular) magnitude)
   (put 'angle '(rectangular) angle)
   (put 'make-from-real-imag 'rectangular 
@@ -150,17 +151,17 @@
   (define (magnitude z) (car z))
   (define (angle z) (cdr z))
   (define (make-from-mag-ang r a) (cons r a))
-  (define (real-part z)
+  (define (real-part-polar z)
     (* (magnitude z) (cos (angle z))))
-  (define (imag-part z)
+  (define (imag-part-polar z)
     (* (magnitude z) (sin (angle z))))
   (define (make-from-real-imag x y) 
     (cons (sqrt (+ (square x) (square y)))
           (atan y x)))
   ;; interface to the rest of the system
   (define (tag x) (attach-tag 'polar x))
-  (put 'real-part '(polar) real-part)
-  (put 'imag-part '(polar) imag-part)
+  (put 'real-part '(polar) real-part-polar)
+  (put 'imag-part '(polar) imag-part-polar)
   (put 'magnitude '(polar) magnitude)
   (put 'angle '(polar) angle)
   (put 'make-from-real-imag 'polar
@@ -173,6 +174,7 @@
   (put '=zero? '(polar)
        (lambda (x) (zero? (magnitude x))))
   'done)
+
 (install-polar-package)
 
 (define (install-complex-package)
@@ -216,6 +218,7 @@
   (put 'equ? '(complex complex) equ?)
   (put '=zero? '(complex) =zero?)
   'done)
+
 (install-complex-package)
 
 
@@ -225,8 +228,3 @@
   ((get 'make-from-mag-ang 'complex) r a))
 
 
-(define (install-matrix-package)
-  (define (tag z) (attach-tag 'matrix z))
-  (define (mul-scalar s m)
-    )
-  )
