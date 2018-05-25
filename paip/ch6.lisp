@@ -58,7 +58,6 @@
 
 ;; Default single and segment matchers
 (setf (get '?is 'single-match) 'match-is)
-(setf (get '?or 'single-match) 'match-or)
 (setf (get '?and 'single-match) 'match-and)
 (setf (get '?not 'single-match) 'match-not)
 
@@ -66,6 +65,7 @@
 (setf (get '?+ 'segment-match) 'segment-match+)
 (setf (get '?? 'segment-match) 'segment-match?)
 (setf (get '?if 'segment-match) 'match-if)
+(setf (get '?or 'segment-match) 'match-or)
 
 ;; Generic matcher glue
 
@@ -116,16 +116,7 @@
 		      (pat-match (first patterns) input bindings)))))
 
 
-;;; FIXME: this chooses the first success in the set of disjuncts and does not retry others if that one leads to a failure later in the pattern
-;;  e.g.: (pat-match '((?or ?x ?y) ?x ?y) '(1 2 2)) fails by picking first option but should succeed with second.
-(defun match-or (patterns input bindings)
-  "Succed if any pattern matches input: (?or ?x ?y)"
-  (cond ((eq bindings fail) fail)
-	((null patterns) fail)
-	(t (let ((new-bindings (pat-match (first patterns) input bindings)))
-	     (if (eq new-bindings fail)
-		 (match-or (rest patterns) input bindings)
-		 new-bindings)))))
+
 
 (defun match-not (patterns input bindings)
   (if (eq (match-or patterns input bindings) fail)
@@ -168,13 +159,29 @@
 	((< start (length input)) start)
 	(t nil)))
 
+(defun match-or (pattern input bindings)
+  "Succed if any pattern matches input: (?or ?x ?y)"
+  (print pattern)
+  (let ((patterns (cdr (first pattern))))
+    (if (null patterns) fail
+      (or (let ((new-bindings (pat-match (first patterns) (first input) bindings)))
+            (print (first patterns))
+            (print (first input))
+            (print new-bindings)
+            (and (not (eq new-bindings fail))
+                 (pat-match (rest pattern) (rest input) new-bindings)))
+          (match-or `((?or ,@(rest patterns)) ,@(rest pattern))
+                    input bindings)))))
+
 (defun match-if (pattern input bindings)
   "Fail unless provided expression evaluates to true in presence of bindings"
   (let ((expr (second (first pattern))))
-    ;;; Book code uses progv instead of substitution. But I can't see why this doesn't work
-    (if (eval (sublis bindings expr))
-	(pat-match (rest pattern) input bindings)
-	fail)))
+    ;;; need to use progv rather than substitution to maintain value of lists, rather than intepreting lists as 
+    (and (progv
+             (mapcar #'car bindings) 
+             (mapcar #'cdr bindings)
+           (eval expr))
+         (pat-match (rest pattern) input bindings))))
 
 (defun pat-match-abbrev (symbol expansion)
   "Define symbol as a macro standing for expansion in pat-match"
@@ -187,6 +194,10 @@
 	((atom pat) pat)
 	(t (cons (expand-pat-match-abbrev (first pat))
 		 (expand-pat-match-abbrev (rest pat))))))
+
+(pat-match-abbrev '?x* '(?* ?x))
+(pat-match-abbrev '?y* '(?* ?y))
+(pat-match-abbrev '?x+ '(?+ ?x))
 
 ;;; Ex 6.2:
 ;;; There is definitely a bug with ?or where it always picks the first possible success,
