@@ -75,7 +75,6 @@ let evalBegin = (beginExpr, env) => {
     for(let child of exprs) {
         val = evaluate(child, env);
     }
-    console.log(`Begin is about to return: ${val}`);
     return val;
 }
 
