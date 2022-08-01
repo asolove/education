@@ -1,16 +1,8 @@
-let source = `
-(begin
-    (define (fib n)
-        (define (fib-iter a b k)
-            (if (= k n)
-                b
-                (fib-iter b (+ a b) (+ k 1))))
-        (fib-iter 0 1 1))
-    (fib 10))
-`
+// # Parsing sexprs
 
 // type Parser<T> = (source: string) => {value: T, remainingSource: string} | Error
 
+// FIXME: should just use console.group instead!
 let indent = 0;
 
 const logTrace = (line) => {
@@ -72,21 +64,8 @@ let parseIdentifier = (source) => {
     return [match, source.slice(match.length)];
 }
 
-console.log("Parsing sexpr");
-console.log(source);
-let ast = parse(source)[0];
-console.log(ast);
 
-// let ast = [
-//     "begin",
-//     ["define", ["fib", "n"], 
-//         ["define", ["fib-iter", "a", "b", "k"],
-//             ["if", ["=", "k", "n"],
-//                     "b",
-//                     ["fib-iter", "b", ["+", "a", "b"], ["+", "k", 1]]]],
-//         ["fib-iter", 0, 1, 1]],
-//     ["fib", 10]
-// ];
+// # Evaluating AST to value
 
 let evaluate = (expr, env) => {
     console.log(`Evaluating ${JSON.stringify(expr)}`);
@@ -206,9 +185,39 @@ let inspectEnv = (env) => {
 }
 
 
-// Sample program
 
-console.log(evaluate(ast, baseEnv()));
+// # Example program
+let source = `
+(begin
+    (define (fib n)
+        (define (fib-iter a b k)
+            (if (= k n)
+                b
+                (fib-iter b (+ a b) (+ k 1))))
+        (fib-iter 0 1 1))
+    (fib 10))`
 
-console.log(JSON.stringify(parseTree));
+console.log("Input:")
+console.log(source);
+
+console.group("\nParsing");
+let ast = parse(source)[0];
+console.groupEnd();
 console.log(JSON.stringify(ast));
+
+console.group("\nEvaluating");
+let result = evaluate(ast, baseEnv());
+console.groupEnd();
+console.log(result);
+
+// let ast = [
+//     "begin",
+//     ["define", ["fib", "n"], 
+//         ["define", ["fib-iter", "a", "b", "k"],
+//             ["if", ["=", "k", "n"],
+//                     "b",
+//                     ["fib-iter", "b", ["+", "a", "b"], ["+", "k", 1]]]],
+//         ["fib-iter", 0, 1, 1]],
+//     ["fib", 10]
+// ];
+
