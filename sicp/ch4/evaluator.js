@@ -9,16 +9,84 @@ let source = `
     (fib 10))
 `
 
-let parseTree = [
-    "begin",
-    ["define", ["fib", "n"], 
-        ["define", ["fib-iter", "a", "b", "k"],
-            ["if", ["=", "k", "n"],
-                    "b",
-                    ["fib-iter", "b", ["+", "a", "b"], ["+", "k", 1]]]],
-        ["fib-iter", 0, 1, 1]],
-    ["fib", 10]
-];
+// type Parser<T> = (source: string) => {value: T, remainingSource: string} | Error
+
+let indent = 0;
+
+const logTrace = (line) => {
+    console.log(("  ".repeat(indent)) + line);
+}
+
+const untilNewline = (source) => source.slice(0, source.indexOf("\n"));
+
+let parse = (source) => {
+    logTrace(`Parsing at: ${untilNewline(source)}`);
+    if(/^\s+/.test(source))
+        return parse(source.trim());
+    if(source.startsWith("("))
+        return parseList(source);
+    if(/^\d/.test(source))
+        return parseNumber(source);
+
+    return parseIdentifier(source);
+}
+
+let consume = (pattern, source) => {
+    let matches = source.match(pattern);
+    if(!matches) {
+        throw new Error(`consume expected ${pattern} but found ${untilNewline(source)}`);
+    } else {
+        return [matches[0], source.slice(matches[0].length)];
+    }
+}
+
+let parseList = (source) => {
+    logTrace(`Parsing list at: ${untilNewline(source)}`);
+    let [, newSource] = consume(/\(/, source);
+    let expr;
+    let result = [];
+    indent++;
+    while (!(/^\s*\)/.test(newSource))) {
+        logTrace(`Parsing list item at: ${untilNewline(newSource)}`);
+        [expr, newSource] = parse(newSource);
+        result.push(expr);
+    }
+    indent--;
+    [, newSource] = consume(/^\s*\)/, newSource);
+    logTrace("Returning from list context.")
+    return [result, newSource];
+}
+
+let parseNumber = (source) => {
+    logTrace(`Parsing number at: ${untilNewline(source)}`);
+    let [match] = source.match(/^\d+(\.\d+)?/);
+    let n = parseFloat(match, 10);
+    let newSource = source.slice(match.length);
+    logTrace(`Done parsing number. Got ${match}, parsed to ${n} and next up to parse: ${untilNewline(newSource)}`)
+    return [n, newSource];
+}
+
+let parseIdentifier = (source) => {
+    logTrace(`Parsing identifier at: ${untilNewline(source)}`);
+    let [match] = source.match(/^[^\d\s][^\)\s]*/);
+    return [match, source.slice(match.length)];
+}
+
+console.log("Parsing sexpr");
+console.log(source);
+let ast = parse(source)[0];
+console.log(ast);
+
+// let ast = [
+//     "begin",
+//     ["define", ["fib", "n"], 
+//         ["define", ["fib-iter", "a", "b", "k"],
+//             ["if", ["=", "k", "n"],
+//                     "b",
+//                     ["fib-iter", "b", ["+", "a", "b"], ["+", "k", 1]]]],
+//         ["fib-iter", 0, 1, 1]],
+//     ["fib", 10]
+// ];
 
 let evaluate = (expr, env) => {
     console.log(`Evaluating ${JSON.stringify(expr)}`);
@@ -140,4 +208,7 @@ let inspectEnv = (env) => {
 
 // Sample program
 
-console.log(evaluate(parseTree, baseEnv()));
+console.log(evaluate(ast, baseEnv()));
+
+console.log(JSON.stringify(parseTree));
+console.log(JSON.stringify(ast));
