@@ -4,3 +4,5 @@ compiled/
 *.out
 *.native
 _build
+**/*.rkt~
+**/compiled
