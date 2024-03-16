@@ -43,6 +43,13 @@ export function reverseInPlace<A>(
   return newHead;
 }
 
+export function insertAfter<A>(list: LinkedList<A>, item: A) {
+  if (!list) throw new Error("insertAfter called with empty list");
+
+  let node = { item, next: list.next };
+  list.next = node;
+}
+
 function test() {
   assert.deepEqual([], toArray(fromArray([])));
   assert.deepEqual([1, 2, 3], toArray(fromArray([1, 2, 3])));
@@ -52,5 +59,13 @@ function test() {
 
   assert.deepEqual([], toArray(reverseInPlace(fromArray([]))));
   assert.deepEqual([3, 2, 1], toArray(reverseInPlace(fromArray([1, 2, 3]))));
+
+  assert.throws(() => insertAfter(null, 3));
+  let list = fromArray([1, 3]);
+  insertAfter(list, 2);
+  assert.deepEqual([1, 2, 3], toArray(list));
+
+  console.log("Tests passed");
 }
+
 test();
